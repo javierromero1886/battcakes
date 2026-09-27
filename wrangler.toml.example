@@ -1,0 +1,11 @@
+# Opcional: solo si prefieres declarar el binding de D1 en el repo en lugar del panel de Cloudflare.
+# Renombra este archivo a wrangler.toml y reemplaza database_id con el ID que devuelve
+#   npx wrangler d1 create battcakes-reclamaciones
+name = "battcakes"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "battcakes-reclamaciones"
+database_id = "REEMPLAZAR-POR-EL-ID-DE-TU-BASE-D1"

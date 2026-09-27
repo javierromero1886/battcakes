@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin-reclamaciones
+Disallow: /api/
+Sitemap: https://battcakes.com/sitemap.xml
