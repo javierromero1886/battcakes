@@ -11,7 +11,7 @@
   var GADS_ID = 'AW-18477119821';
   // Etiqueta de conversión de Google Ads (Objetivos → Conversiones → tu acción "Contacto por WhatsApp" → Configurar etiqueta manualmente).
   // Es la parte que va después de la barra en send_to: 'AW-18477119821/XXXXXXXXXXXXXXXXXXX'. Déjala vacía hasta tenerla.
-  var CONVERSION_LABEL = '';
+  var CONVERSION_LABEL = '3rldCL-f2YkdEM3yyepE'; // Acción "Contacto por WhatsApp" (Google Ads)
 
   var KEY = 'battcakes-consent';
   var VERSION = 1;                       // súbelo si cambias las categorías o el texto del aviso
@@ -54,7 +54,7 @@
     if (!t) return;
     // Con consentimiento denegado, Google recibe la señal sin cookies (solo para estimaciones agregadas).
     gtag('event', 'contacto_whatsapp', { event_category: 'contacto', event_label: t.getAttribute('href') || 'cotizador' });
-    if (CONVERSION_LABEL) gtag('event', 'conversion', { send_to: GADS_ID + '/' + CONVERSION_LABEL });
+    if (CONVERSION_LABEL) gtag('event', 'conversion', { send_to: GADS_ID + '/' + CONVERSION_LABEL, value: 1.0, currency: 'PEN' });
   }, true);
 
   /* ---------------- Aviso de cookies ---------------- */
