@@ -76,13 +76,13 @@ Después de agregar variables, vuelve a desplegar (Deployments → Retry deploym
 
 ## 7. Google Ads (etiqueta AW-18477119821) y aviso de cookies
 
-La etiqueta de Google ya está integrada en `consent.js` en todas las páginas, pero **no se carga hasta que el visitante acepta** el aviso de cookies (consentimiento previo, como exige el Reglamento de la Ley 29733). Al aceptar, se activa Consent Mode v2 con `ad_storage`, `ad_user_data` y `ad_personalization` en `granted` y se carga `gtag.js`. Al rechazar, no se carga nada y se borran las cookies `_gcl_*` que existan. El visitante puede cambiar su decisión desde "Preferencias de cookies" en el pie de página; la elección se guarda 6 meses.
+La etiqueta de Google está en el `<head>` de todas las páginas en **modo avanzado de Consent Mode v2**: se carga siempre, pero con `ad_storage`, `ad_user_data` y `ad_personalization` en `denied`, así que no coloca cookies ni identificadores hasta que el visitante acepta el aviso de cookies (`consent.js` pasa el consentimiento a `granted` al aceptar y lo recuerda 6 meses). Al rechazar, sigue en `denied` y se borran las cookies `_gcl_*` que existan; Google recibe solo señales sin cookies que usa para estimaciones agregadas (modelado de conversiones). Con esto Google Ads detecta la etiqueta y "Probar conexión" da verde.
 
 Para medir conversiones (clics en WhatsApp):
 1. En Google Ads → **Objetivos → Conversiones → Nueva acción de conversión → Sitio web**, crea una acción manual del tipo "Contacto" llamada, por ejemplo, *Contacto por WhatsApp* (categoría Contacto, valor opcional, recuento "Una").
 2. En "Configurar etiqueta manualmente" verás `send_to: 'AW-18477119821/XXXXXXXXXXXX'`. Copia solo la parte posterior a la barra.
 3. Pégala en `consent.js`, en la constante `CONVERSION_LABEL = ''`. Desde ese momento cada clic en un enlace o botón de WhatsApp envía la conversión (solo para visitantes que aceptaron cookies).
-4. El botón "Probar instalación" de Google Ads solo dará verde si tú aceptas las cookies en tu propia visita (así funciona el consentimiento previo). Es normal.
+4. En Google Ads, tras el despliegue, pulsa "Probar conexión": debe detectar la etiqueta `AW-18477119821`.
 
 **Cloudflare Web Analytics** (sin cookies) puede seguir activo en Pages → **Metrics / Web Analytics → Enable**; no requiere consentimiento y ya está declarado en la política. No agregues Google Analytics, Meta Pixel u otras herramientas sin sumarlas primero al aviso de cookies y a la Política de Privacidad.
 

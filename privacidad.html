@@ -22,6 +22,15 @@
 <script>
 (function(){try{var t=localStorage.getItem('battcakes-theme');if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
+<!-- Google tag (gtag.js) — Consent Mode v2: sin cookies ni identificadores hasta que el visitante acepte en el aviso -->
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
+try{var bcC=JSON.parse(localStorage.getItem('battcakes-consent')||'null');if(bcC&&bcC.v===1&&bcC.ads===true&&Date.now()-bcC.ts<15552000000){gtag('consent','update',{'ad_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(e){}
+window.__bcGtagReady=true;
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18477119821"></script>
+<script>gtag('js',new Date());gtag('config','AW-18477119821');</script>
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -139,7 +148,7 @@
     <p>Nuestros productos se contratan por personas mayores de edad. Cuando un pedido incluye el nombre, la edad o una fotografía de un niño o niña (por ejemplo, para un baby shower, bautizo o cumpleaños), entendemos que quien lo proporciona es su madre, padre o tutor y que nos autoriza a usar esa información únicamente para elaborar el producto. No publicamos fotos de niños ni de clientes sin autorización expresa.</p>
 
     <h2 id="cookies">9. Cookies y tecnologías similares</h2>
-    <p>battcakes.com no utiliza cookies propias de análisis. La única tecnología de publicidad que empleamos es la <strong>etiqueta de Google Ads</strong>, y <strong>solo se activa si la aceptas</strong> en el aviso de cookies: hasta entonces no se carga ni coloca cookies. Puedes aceptar o rechazar con la misma facilidad y cambiar tu decisión en cualquier momento desde "Preferencias de cookies" en el pie de página. Tu elección se guarda en tu navegador durante 6 meses.</p>
+    <p>battcakes.com no utiliza cookies propias de análisis. La única tecnología de publicidad que empleamos es la <strong>etiqueta de Google Ads</strong>, configurada en "modo de consentimiento": <strong>no coloca cookies ni guarda identificadores hasta que las aceptes</strong> en el aviso. Mientras no aceptes, la etiqueta solo envía a Google señales técnicas sin cookies (página visitada, hora y tipo de dispositivo) que Google usa para estimaciones agregadas; si aceptas, se activan las cookies descritas abajo. Puedes aceptar o rechazar con la misma facilidad y cambiar tu decisión en cualquier momento desde "Preferencias de cookies" en el pie de página. Tu elección se guarda en tu navegador durante 6 meses.</p>
     <p>Lo que puede ocurrir al visitar el sitio:</p>
     <div class="table-wrap">
       <table class="datos-tabla">
@@ -148,7 +157,7 @@
         <tr><th>Preferencia de tema (<code>battcakes-theme</code>)</th><td>Almacenamiento local del navegador (localStorage) que recuerda si elegiste modo claro u oscuro. Es estrictamente funcional, no identifica a la persona y no se envía a ningún servidor. Se borra desde la configuración de tu navegador.</td></tr>
         <tr><th>Cookies técnicas de Cloudflare (<code>__cf_bm</code>, <code>_cfuvid</code>)</th><td>Pueden colocarse temporalmente para distinguir visitantes legítimos de bots y proteger el sitio. Son necesarias para la seguridad y no requieren consentimiento.</td></tr>
         <tr><th>Cloudflare Web Analytics</th><td>Estadísticas agregadas de visitas (páginas vistas, país, tipo de dispositivo) <strong>sin cookies ni identificadores</strong> persistentes. No permite seguirte entre sitios.</td></tr>
-        <tr><th>Google Ads (<code>_gcl_au</code>, <code>_gcl_aw</code>, <code>IDE</code>, <code>test_cookie</code>) — <em>solo con tu consentimiento</em></th><td>Cookies de publicidad de Google LLC. Permiten saber si llegaste desde uno de nuestros anuncios y si nos escribiste por WhatsApp (medición de conversiones), y mostrarte anuncios relevantes en sitios de Google (remarketing). Duración: <code>_gcl_au</code> 3 meses, <code>_gcl_aw</code> 3 meses, <code>IDE</code> hasta 13 meses. Se rigen también por la <a href="https://policies.google.com/technologies/ads?hl=es" target="_blank" rel="noopener">política de Google</a>. Si las rechazas o retiras tu consentimiento, no se cargan y eliminamos las que estén a nuestro alcance.</td></tr>
+        <tr><th>Google Ads (<code>_gcl_au</code>, <code>_gcl_aw</code>, <code>IDE</code>, <code>test_cookie</code>) — <em>solo con tu consentimiento</em></th><td>Cookies de publicidad de Google LLC. Permiten saber si llegaste desde uno de nuestros anuncios y si nos escribiste por WhatsApp (medición de conversiones), y mostrarte anuncios relevantes en sitios de Google (remarketing). Duración: <code>_gcl_au</code> 3 meses, <code>_gcl_aw</code> 3 meses, <code>IDE</code> hasta 13 meses. Se rigen también por la <a href="https://policies.google.com/technologies/ads?hl=es" target="_blank" rel="noopener">política de Google</a>. Si las rechazas o retiras tu consentimiento, no se colocan y eliminamos las que estén a nuestro alcance.</td></tr>
         <tr><th>Enlaces externos</th><td>Al hacer clic en WhatsApp, Instagram, Facebook o TikTok pasas a sitios de terceros que aplican sus propias cookies y políticas.</td></tr>
         </tbody>
       </table>

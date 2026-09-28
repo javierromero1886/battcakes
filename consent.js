@@ -1,7 +1,8 @@
 /* Battcakes — consentimiento de cookies y etiqueta de Google Ads
- * - La etiqueta de Google (gtag.js, cuenta AW-18477119821) SOLO se carga si el visitante acepta las cookies
+ * - La etiqueta de Google (gtag.js, cuenta AW-18477119821) se carga desde el <head> de cada página con Google Consent Mode v2
+ *   en estado "denied": no coloca cookies ni guarda identificadores hasta que el visitante acepta en el aviso
  *   (consentimiento previo, expreso y revocable, conforme a la Ley 29733 y su Reglamento D.S. 016-2024-JUS).
- * - Usa Google Consent Mode v2: los permisos parten en "denied" y pasan a "granted" al aceptar.
+ * - Este archivo muestra el aviso, guarda la decisión y pasa el consentimiento a "granted" al aceptar.
  * - Registra como conversión cada clic en un enlace o botón de WhatsApp.
  * - La decisión se guarda 6 meses en el navegador (localStorage) y puede cambiarse desde "Preferencias de cookies" en el pie de página.
  */
@@ -18,12 +19,11 @@
 
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
-  window.gtag = window.gtag || gtag;
-
-  // Consent Mode v2: por defecto todo denegado hasta que la persona decida.
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied'
-  });
+  if (!window.__bcGtagReady) {
+    // Respaldo por si una página no incluye el snippet del <head>: valores por defecto denegados.
+    window.gtag = window.gtag || gtag;
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' });
+  }
 
   function leer() {
     try {
@@ -36,17 +36,8 @@
     try { localStorage.setItem(KEY, JSON.stringify({ v: VERSION, ads: !!ads, ts: Date.now() })); } catch (e) {}
   }
 
-  var cargado = false;
-  function cargarGoogle() {
-    if (cargado) return;
-    cargado = true;
+  function otorgarConsentimiento() {
     gtag('consent', 'update', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted' });
-    var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GADS_ID;
-    document.head.appendChild(s);
-    gtag('js', new Date());
-    gtag('config', GADS_ID);
   }
   function retirarConsentimiento() {
     gtag('consent', 'update', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
@@ -60,7 +51,8 @@
   // Conversión: cualquier clic en WhatsApp (enlaces wa.me y el botón del cotizador).
   document.addEventListener('click', function (e) {
     var t = e.target && e.target.closest ? e.target.closest('a[href*="wa.me"], .btn-wsp, .whatsapp-float, .wa-float') : null;
-    if (!t || !cargado) return;
+    if (!t) return;
+    // Con consentimiento denegado, Google recibe la señal sin cookies (solo para estimaciones agregadas).
     gtag('event', 'contacto_whatsapp', { event_category: 'contacto', event_label: t.getAttribute('href') || 'cotizador' });
     if (CONVERSION_LABEL) gtag('event', 'conversion', { send_to: GADS_ID + '/' + CONVERSION_LABEL });
   }, true);
@@ -88,11 +80,11 @@
     aviso.setAttribute('aria-describedby', 'bc-cookies-d');
     aviso.innerHTML =
       '<h2 id="bc-cookies-t">🍪 Cookies de anuncios</h2>' +
-      '<p id="bc-cookies-d">Con tu permiso usamos la etiqueta de <strong>Google Ads</strong> para saber si nuestros anuncios te trajeron hasta aquí y mostrarte anuncios relevantes. No se activa nada hasta que aceptes; puedes cambiar de opinión cuando quieras. <a href="/privacidad#cookies">Política de cookies</a>' +
+      '<p id="bc-cookies-d">Con tu permiso usamos la etiqueta de <strong>Google Ads</strong> para saber si nuestros anuncios te trajeron hasta aquí y mostrarte anuncios relevantes. No se guardan cookies hasta que aceptes; puedes cambiar de opinión cuando quieras. <a href="/privacidad#cookies">Política de cookies</a>' +
       (reabrir && actual ? ' · Preferencia actual: <strong>' + (actual.ads ? 'aceptadas' : 'rechazadas') + '</strong>' : '') + '</p>' +
       '<div class="bc-acciones"><button type="button" class="bc-rechazar">Rechazar</button><button type="button" class="bc-aceptar">Aceptar</button></div>';
     document.body.appendChild(aviso);
-    aviso.querySelector('.bc-aceptar').addEventListener('click', function () { guardar(true); cargarGoogle(); cerrar(); });
+    aviso.querySelector('.bc-aceptar').addEventListener('click', function () { guardar(true); otorgarConsentimiento(); cerrar(); });
     aviso.querySelector('.bc-rechazar').addEventListener('click', function () { guardar(false); retirarConsentimiento(); cerrar(); });
     aviso.tabIndex = -1;
     aviso.focus({ preventScroll: true });
@@ -101,7 +93,7 @@
 
   var decision = leer();
   if (decision) {
-    if (decision.ads) cargarGoogle();
+    if (decision.ads) otorgarConsentimiento(); // el <head> ya lo aplicó; repetirlo es inocuo
   } else {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { mostrarAviso(false); });
     else mostrarAviso(false);
