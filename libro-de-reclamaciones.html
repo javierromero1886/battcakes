@@ -7,6 +7,7 @@
 <meta name="description" content="Libro de Reclamaciones virtual de Battcakes (Magaly Battistini Oroche, RUC 10460941348). Registra tu reclamo o queja y recibe tu hoja numerada.">
 <link rel="canonical" href="https://battcakes.com/libro-de-reclamaciones">
 <meta name="robots" content="index, follow">
+<meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#5A146C">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/favicon-192.png">
@@ -22,15 +23,8 @@
 <script>
 (function(){try{var t=localStorage.getItem('battcakes-theme');if(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<!-- Google tag (gtag.js) — Consent Mode v2: sin cookies ni identificadores hasta que el visitante acepte en el aviso -->
-<script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied'});
-try{var bcC=JSON.parse(localStorage.getItem('battcakes-consent')||'null');if(bcC&&bcC.v===1&&bcC.ads===true&&Date.now()-bcC.ts<15552000000){gtag('consent','update',{'ad_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(e){}
-window.__bcGtagReady=true;
-</script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18477119821"></script>
-<script>gtag('js',new Date());gtag('config','AW-18477119821');</script>
+<!-- Esta página NO carga la etiqueta de Google Ads ni consent.js: la URL de la hoja (número + código de verificación)
+     da acceso a datos personales del consumidor y no debe llegar a ningún tercero. -->
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -145,7 +139,9 @@ window.__bcGtagReady=true;
           <span class="error">Debes aceptar para continuar.</span>
         </div>
 
-        <div id="turnstile-wrap" class="cf-turnstile" data-sitekey="" data-theme="auto" hidden></div>
+        <!-- TURNSTILE (antispam): pega aquí la "Site key" de Cloudflare → Turnstile, entre las comillas de data-sitekey.
+             La "Secret key" va en la variable de entorno TURNSTILE_SECRET_KEY de Cloudflare Pages. -->
+        <div id="turnstile-wrap" class="cf-turnstile" data-sitekey="0x4AAAAAAFWOa17ziNIft1bO" data-theme="auto" data-language="es" hidden></div>
 
         <div class="form-actions">
           <button class="btn btn-primary" type="submit" id="btn-enviar">Registrar reclamo</button>
@@ -178,9 +174,12 @@ window.__bcGtagReady=true;
   var apWrap=document.getElementById('apoderado-wrap');
   menor.addEventListener('change',function(){apWrap.hidden=!menor.checked;});
 
-  // Turnstile opcional: se activa solo si hay data-sitekey
+  // Turnstile: se activa solo si data-sitekey tiene valor.
   var ts=document.getElementById('turnstile-wrap');
-  if(ts && ts.getAttribute('data-sitekey')){ts.hidden=false;var s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js';s.async=true;s.defer=true;document.head.appendChild(s);}
+  var tsActivo=!!(ts&&ts.getAttribute('data-sitekey'));
+  if(tsActivo){ts.hidden=false;var s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js';s.async=true;s.defer=true;document.head.appendChild(s);}
+  function tsToken(){var i=form.querySelector('input[name="cf-turnstile-response"]');return i?i.value:'';}
+  function tsReset(){if(tsActivo&&window.turnstile){try{window.turnstile.reset();}catch(e){}}}
 
   function setError(id,bad){var f=document.getElementById(id);if(!f)return;var wrap=f.closest('.field');if(wrap)wrap.classList.toggle('has-error',bad);f.setAttribute('aria-invalid',bad?'true':'false');}
   function val(id){var el=document.getElementById(id);return el?el.value.trim():'';}
@@ -229,6 +228,7 @@ window.__bcGtagReady=true;
     e.preventDefault();
     status.textContent='';status.className='form-status';
     if(!validate()){if(!status.textContent){status.textContent='Revisa los campos marcados.';status.className='form-status err';}var bad=form.querySelector('.has-error input,.has-error textarea,.has-error select');if(bad)bad.focus();return;}
+    if(tsActivo&&!tsToken()){status.textContent='Completa la verificación de seguridad antes de enviar.';status.className='form-status err';ts.scrollIntoView({behavior:'smooth',block:'center'});return;}
     var data={};new FormData(form).forEach(function(v,k){data[k]=typeof v==='string'?v.trim():v;});
     data.menor=menor.checked;data.acepta=true;
     btn.disabled=true;btn.textContent='Registrando…';
@@ -241,7 +241,7 @@ window.__bcGtagReady=true;
         renderHoja(r);
         try{history.replaceState(null,'','/libro-de-reclamaciones?hoja='+encodeURIComponent(r.numero)+'&codigo='+encodeURIComponent(r.codigo));}catch(err){}
       })
-      .catch(function(err){status.textContent=err.message||'Ocurrió un error. Si persiste, escríbenos a contacto@battcakes.com.';status.className='form-status err';})
+      .catch(function(err){status.textContent=err.message||'Ocurrió un error. Si persiste, escríbenos a contacto@battcakes.com.';status.className='form-status err';tsReset();})
       .finally(function(){btn.disabled=false;btn.textContent='Registrar reclamo';});
   });
 
@@ -280,7 +280,7 @@ window.__bcGtagReady=true;
         <ul>
           <li><a href="/terminos">Términos y Condiciones</a></li>
           <li><a href="/privacidad">Política de Privacidad y Cookies</a></li>
-          <li><a href="/privacidad#cookies" data-cookies>Preferencias de cookies</a></li>
+          <li><a href="/privacidad#cookies">Preferencias de cookies</a></li>
           <li><a class="footer-libro" href="/libro-de-reclamaciones"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><span>Libro de Reclamaciones<small>Virtual · Ley N.° 29571</small></span></a></li>
         </ul>
       </div>
@@ -293,7 +293,6 @@ window.__bcGtagReady=true;
 </footer>
 <a class="wa-float" href="https://wa.me/51966694119?text=Hola%20Battcakes%2C%20quiero%20hacer%20un%20pedido" target="_blank" rel="noopener noreferrer" aria-label="Escribir a Battcakes por WhatsApp"><svg class="icon" aria-hidden="true"><use href="#i-wa"/></svg></a>
 <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
-<script src="consent.js" defer></script>
 <script>
 (function(){
   var root=document.documentElement;

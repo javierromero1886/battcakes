@@ -4,6 +4,7 @@
  *
  * Protegido con la variable de entorno ADMIN_KEY (una contraseña larga que solo conoce el negocio).
  * El panel admin-reclamaciones.html envía esa clave en la cabecera "x-admin-key".
+ * Recomendado: poner además Cloudflare Access delante de /admin-reclamaciones y /api/admin.
  *
  * GET  /api/admin?estado=pendiente|atendido|todas   → lista de hojas (añade &formato=csv para descargar el libro completo)
  * POST /api/admin  { numero, respuesta }             → registra la respuesta, marca "atendido" y la envía al consumidor por correo
@@ -89,10 +90,15 @@ async function exportarCsv(env) {
   const cols = ['numero', 'creado_en', 'tipo', 'estado', 'nombre', 'doc_tipo', 'doc_numero', 'domicilio', 'telefono', 'email', 'canal_respuesta', 'menor', 'apoderado',
     'bien_tipo', 'bien_descripcion', 'monto', 'detalle', 'pedido', 'respuesta', 'respondido_en', 'email_enviado', 'codigo'];
   const res = await env.DB.prepare(`SELECT ${cols.join(', ')} FROM reclamaciones ORDER BY id ASC`).all();
-  const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  // Anteponer un apóstrofo evita que Excel ejecute como fórmula un texto que empiece con = + - @ (inyección CSV).
+  const q = (v) => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
   const lineas = [cols.join(',')].concat((res.results || []).map((r) => cols.map((c) => q(r[c])).join(',')));
   const fecha = new Date().toISOString().slice(0, 10);
-  return new Response('\uFEFF' + lineas.join('\r\n'), {
+  return new Response('﻿' + lineas.join('\r\n'), {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': `attachment; filename="libro-de-reclamaciones-${fecha}.csv"`,
