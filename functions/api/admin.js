@@ -8,8 +8,9 @@
  *
  * GET  /api/admin?estado=pendiente|atendido|todas   → lista de hojas (añade &formato=csv para descargar el libro completo)
  * POST /api/admin  { numero, respuesta }             → registra la respuesta, marca "atendido" y la envía al consumidor por correo
+ *                                                     (con copia oculta al negocio; guarda respuesta_email_enviado = 1 si salió)
  */
-import { plantillaHtml, plantillaTexto, enviarResend } from './reclamaciones.js';
+import { plantillaHtml, plantillaTexto, enviarResend, correoNegocio } from './reclamaciones.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
@@ -37,7 +38,7 @@ export async function onRequestGet({ request, env }) {
   const where = estado === 'todas' ? '' : 'WHERE estado = ?';
   const stmt = env.DB.prepare(
     `SELECT id, numero, codigo, creado_en, tipo, nombre, doc_tipo, doc_numero, domicilio, telefono, email, canal_respuesta, menor, apoderado,
-            bien_tipo, bien_descripcion, monto, detalle, pedido, estado, respuesta, respondido_en, email_enviado
+            bien_tipo, bien_descripcion, monto, detalle, pedido, estado, respuesta, respondido_en, email_enviado, respuesta_email_enviado
        FROM reclamaciones ${where} ORDER BY id DESC LIMIT ?`
   );
   const res = estado === 'todas' ? await stmt.bind(limit).all() : await stmt.bind(estado, limit).all();
@@ -67,13 +68,15 @@ export async function onRequestPost({ request, env }) {
   if (env.RESEND_API_KEY && body.enviar_correo !== false) {
     try {
       const from = env.MAIL_FROM || 'Battcakes <reclamaciones@battcakes.com>';
-      const negocio = env.MAIL_TO || 'contacto@battcakes.com';
+      const negocio = correoNegocio(env);
       await enviarResend(env, {
-        from, to: [hoja.email], reply_to: negocio,
+        from, to: [hoja.email], bcc: [negocio], reply_to: negocio,
         subject: `Respuesta a tu Hoja de Reclamación N.° ${hoja.numero} — Battcakes`,
         html: plantillaHtml(hoja), text: plantillaTexto(hoja),
       });
       email_enviado = true;
+      hoja.respuesta_email_enviado = 1;
+      await env.DB.prepare('UPDATE reclamaciones SET respuesta_email_enviado = 1 WHERE numero = ?').bind(numero).run();
     } catch (e) {
       console.log('Email error:', e.message);
     }
@@ -88,7 +91,7 @@ export async function onRequest({ request }) {
 // Exporta todas las hojas en CSV (UTF-8 con BOM para que Excel lo abra bien). Sirve como respaldo y para inspecciones.
 async function exportarCsv(env) {
   const cols = ['numero', 'creado_en', 'tipo', 'estado', 'nombre', 'doc_tipo', 'doc_numero', 'domicilio', 'telefono', 'email', 'canal_respuesta', 'menor', 'apoderado',
-    'bien_tipo', 'bien_descripcion', 'monto', 'detalle', 'pedido', 'respuesta', 'respondido_en', 'email_enviado', 'codigo'];
+    'bien_tipo', 'bien_descripcion', 'monto', 'detalle', 'pedido', 'respuesta', 'respondido_en', 'email_enviado', 'respuesta_email_enviado', 'codigo'];
   const res = await env.DB.prepare(`SELECT ${cols.join(', ')} FROM reclamaciones ORDER BY id ASC`).all();
   // Anteponer un apóstrofo evita que Excel ejecute como fórmula un texto que empiece con = + - @ (inyección CSV).
   const q = (v) => {

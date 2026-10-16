@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panel del Libro de Reclamaciones | Battcakes</title>
 <meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="stylesheet" href="legal.css">
 <style>
@@ -21,13 +22,14 @@
   .barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
   .barra select,.barra input{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
   textarea{width:100%;min-height:140px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;margin-top:10px}
+  .vencido{color:#B00020;font-weight:800}
 </style>
 </head>
 <body>
 <main class="panel">
   <div class="eyebrow">Uso interno</div>
   <h1>Libro de Reclamaciones · Panel</h1>
-  <p style="color:var(--muted)">Aquí ves las hojas registradas y respondes a cada una. La respuesta se guarda en la hoja y se envía al correo del consumidor. Recuerda: máximo 15 días hábiles para responder.</p>
+  <p style="color:var(--muted)">Aquí ves las hojas registradas y respondes a cada una. La respuesta se guarda en la hoja y se envía al correo del consumidor (con copia oculta a contacto@battcakes.com). Recuerda: máximo 15 días hábiles para responder.</p>
 
   <div class="barra">
     <label for="clave">Clave de acceso</label>
@@ -50,7 +52,9 @@
   function key(){try{sessionStorage.setItem('bc-admin-key',clave.value);}catch(e){}return clave.value;}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function f(iso){if(!iso)return '—';try{return new Date(iso).toLocaleString('es-PE',{timeZone:'America/Lima'});}catch(e){return iso;}}
-  function diasHabiles(iso){var d=new Date(iso),hoy=new Date(),n=0;while(d<hoy){d.setDate(d.getDate()+1);var w=d.getDay();if(w!==0&&w!==6)n++;}return n;}
+  // Días hábiles (lunes a viernes) transcurridos desde la fecha de registro, en hora de Lima, sin contar el día del registro.
+  function fechaLima(d){var p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);return new Date(p+'T00:00:00Z');}
+  function diasHabiles(iso){var d=fechaLima(new Date(iso)),hoy=fechaLima(new Date()),n=0;while(d<hoy){d.setUTCDate(d.getUTCDate()+1);var w=d.getUTCDay();if(w!==0&&w!==6)n++;}return n;}
   var hojas=[];
   function cargar(){
     msg.textContent='Cargando…';msg.className='form-status';
@@ -59,19 +63,19 @@
       .then(function(j){
         if(!j.ok)throw new Error(j.error||'Error');
         hojas=j.hojas;msg.textContent=hojas.length+' hoja(s).';msg.className='form-status ok';
-        lista.innerHTML=hojas.map(function(h){var dias=h.estado==='pendiente'?diasHabiles(h.creado_en):null;return '<div class="item" data-n="'+esc(h.numero)+'"><div><b>N.° '+esc(h.numero)+'</b> · '+(h.tipo==='queja'?'Queja':'Reclamo')+' · '+esc(h.nombre)+'<br><small>'+esc(f(h.creado_en))+' · '+esc(h.bien_descripcion)+(dias!=null?' · <b>'+dias+' día(s) hábil(es) transcurridos</b>':'')+'</small></div><span class="estado '+esc(h.estado)+'">'+esc(h.estado)+'</span></div>';}).join('')||'<p>No hay hojas en esta categoría.</p>';
+        lista.innerHTML=hojas.map(function(h){var dias=h.estado==='pendiente'?diasHabiles(h.creado_en):null;var cls=dias!=null&&dias>=12?' class="vencido"':'';return '<div class="item" data-n="'+esc(h.numero)+'"><div><b>N.° '+esc(h.numero)+'</b> · '+(h.tipo==='queja'?'Queja':'Reclamo')+' · '+esc(h.nombre)+'<br><small>'+esc(f(h.creado_en))+' · '+esc(h.bien_descripcion)+(dias!=null?' · <b'+cls+'>'+dias+' de 15 día(s) hábil(es) transcurridos</b>':'')+'</small></div><span class="estado '+esc(h.estado)+'">'+esc(h.estado)+'</span></div>';}).join('')||'<p>No hay hojas en esta categoría.</p>';
       }).catch(function(e){msg.textContent=e.message;msg.className='form-status err';});
   }
   lista.addEventListener('click',function(e){var it=e.target.closest('.item');if(!it)return;var h=hojas.filter(function(x){return x.numero===it.getAttribute('data-n');})[0];if(h)mostrar(h);});
   function mostrar(h){
     det.hidden=false;
     det.innerHTML='<h2 style="font-family:Georgia,serif">Hoja N.° '+esc(h.numero)+' <span class="estado '+esc(h.estado)+'">'+esc(h.estado)+'</span></h2>'+
-      '<dl><dt>Registrada</dt><dd>'+esc(f(h.creado_en))+'</dd><dt>Tipo</dt><dd>'+(h.tipo==='queja'?'Queja':'Reclamo')+'</dd><dt>Consumidor</dt><dd>'+esc(h.nombre)+' · '+esc(h.doc_tipo)+' '+esc(h.doc_numero)+(h.menor?' · Apoderado: '+esc(h.apoderado):'')+'</dd><dt>Contacto</dt><dd>'+esc(h.email)+(h.telefono?' · '+esc(h.telefono):'')+'</dd><dt>Prefiere respuesta por</dt><dd>'+(h.canal_respuesta==='whatsapp'?'<b>WhatsApp o llamada</b> (responde también por ese medio)':'Correo electrónico')+'</dd><dt>Domicilio</dt><dd>'+esc(h.domicilio)+'</dd><dt>Bien</dt><dd>'+(h.bien_tipo==='servicio'?'Servicio':'Producto')+' · '+esc(h.bien_descripcion)+(h.monto!=null?' · S/ '+Number(h.monto).toFixed(2):'')+'</dd><dt>Detalle</dt><dd>'+esc(h.detalle).replace(/\n/g,'<br>')+'</dd><dt>Pedido</dt><dd>'+esc(h.pedido).replace(/\n/g,'<br>')+'</dd><dt>Copia enviada</dt><dd>'+(h.email_enviado?'Sí':'No')+'</dd></dl>'+
-      '<p style="margin-top:14px"><a href="libro-de-reclamaciones?hoja='+encodeURIComponent(h.numero)+'&codigo='+encodeURIComponent(h.codigo)+'" target="_blank" rel="noopener">Ver hoja como la ve el consumidor</a></p>'+
+      '<dl><dt>Registrada</dt><dd>'+esc(f(h.creado_en))+'</dd><dt>Tipo</dt><dd>'+(h.tipo==='queja'?'Queja':'Reclamo')+'</dd><dt>Consumidor</dt><dd>'+esc(h.nombre)+' · '+esc(h.doc_tipo)+' '+esc(h.doc_numero)+(h.menor?' · Apoderado: '+esc(h.apoderado):'')+'</dd><dt>Contacto</dt><dd>'+esc(h.email)+(h.telefono?' · '+esc(h.telefono):'')+'</dd><dt>Prefiere respuesta por</dt><dd>'+(h.canal_respuesta==='whatsapp'?'<b>WhatsApp o llamada</b> (responde también por ese medio)':'Correo electrónico')+'</dd><dt>Domicilio</dt><dd>'+esc(h.domicilio)+'</dd><dt>Bien</dt><dd>'+(h.bien_tipo==='servicio'?'Servicio':'Producto')+' · '+esc(h.bien_descripcion)+(h.monto!=null?' · S/ '+Number(h.monto).toFixed(2):'')+'</dd><dt>Detalle</dt><dd>'+esc(h.detalle).replace(/\n/g,'<br>')+'</dd><dt>Pedido</dt><dd>'+esc(h.pedido).replace(/\n/g,'<br>')+'</dd><dt>Copia enviada al consumidor</dt><dd>'+(h.email_enviado?'Sí':'No')+'</dd>'+(h.estado==='atendido'?'<dt>Respuesta enviada por correo</dt><dd>'+(h.respuesta_email_enviado?'Sí':'No')+'</dd>':'')+'</dl>'+
+      '<p style="margin-top:14px"><a href="libro-de-reclamaciones?hoja='+encodeURIComponent(h.numero)+'&codigo='+encodeURIComponent(h.codigo)+'" target="_blank" rel="noopener noreferrer">Ver hoja como la ve el consumidor</a></p>'+
       '<h3 style="margin-top:18px">Respuesta del proveedor</h3>'+
       (h.respuesta?'<p style="white-space:pre-line;background:var(--accent-soft);padding:12px;border-radius:12px">'+esc(h.respuesta)+'</p><p><small>Respondida el '+esc(f(h.respondido_en))+'</small></p>':'')+
       '<textarea id="resp" placeholder="Escribe la respuesta formal al consumidor: qué se revisó, qué solución se ofrece y los pasos a seguir."></textarea>'+
-      '<label class="check" style="margin-top:10px"><input type="checkbox" id="enviar-correo" checked> <span>Enviar la respuesta al correo del consumidor</span></label>'+
+      '<label class="check" style="margin-top:10px"><input type="checkbox" id="enviar-correo" checked> <span>Enviar la respuesta al correo del consumidor (con copia a contacto@battcakes.com)</span></label>'+
       '<div class="barra"><button class="btn btn-primary" id="enviar" type="button">Guardar respuesta</button><span id="rmsg" class="form-status" role="status"></span></div>';
     det.scrollIntoView({behavior:'smooth'});
     document.getElementById('enviar').addEventListener('click',function(){
@@ -82,7 +86,7 @@
       rm.textContent='Enviando…';rm.className='form-status';
       fetch(API,{method:'POST',headers:{'content-type':'application/json','x-admin-key':key()},body:JSON.stringify({numero:h.numero,respuesta:r,enviar_correo:mandar})})
         .then(function(x){return x.json();})
-        .then(function(j){if(!j.ok)throw new Error(j.error||'Error');rm.textContent='Respuesta guardada'+(j.email_enviado?' y enviada por correo.':(mandar?'. (No se envió correo: revisa RESEND_API_KEY.)':'.'));rm.className='form-status ok';cargar();})
+        .then(function(j){if(!j.ok)throw new Error(j.error||'Error');rm.textContent='Respuesta guardada'+(j.email_enviado?' y enviada por correo.':(mandar?'. (No se envió correo: revisa RESEND_API_KEY.)':'.'));rm.className='form-status ok';mostrar(j.hoja);cargar();})
         .catch(function(e){rm.textContent=e.message;rm.className='form-status err';});
     });
   }

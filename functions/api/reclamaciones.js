@@ -11,6 +11,9 @@
  *   MAIL_TO               (opcional) correo del negocio que recibe cada hoja (por defecto contacto@battcakes.com)
  *   TURNSTILE_SECRET_KEY  (opcional) clave secreta de Cloudflare Turnstile (antispam)
  * Binding D1 (Pages → Settings → Functions → D1 database bindings): DB
+ *
+ * Control de lo enviado: todo correo que sale hacia el consumidor lleva copia oculta (bcc) al correo del negocio,
+ * de modo que queda archivado en la bandeja de Workspace.
  */
 
 const PROVEEDOR = {
@@ -271,14 +274,19 @@ export async function enviarResend(env, payload) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
 }
 
+/** Correo del negocio que recibe copia oculta de todo lo que se envía al consumidor. */
+export function correoNegocio(env) {
+  return env.MAIL_TO || PROVEEDOR.email;
+}
+
 async function enviarCorreos(env, h) {
   const from = env.MAIL_FROM || `Battcakes <reclamaciones@battcakes.com>`;
-  const negocio = env.MAIL_TO || PROVEEDOR.email;
+  const negocio = correoNegocio(env);
   const html = plantillaHtml(h);
   const text = plantillaTexto(h);
-  // Copia para el consumidor
-  await enviarResend(env, { from, to: [h.email], reply_to: negocio, subject: `Hoja de Reclamación N.° ${h.numero} — Battcakes`, html, text });
-  // Aviso para el negocio, con acceso directo al panel de respuesta
+  // Copia para el consumidor, con copia oculta al negocio (queda archivada en Workspace tal como la recibió el consumidor).
+  await enviarResend(env, { from, to: [h.email], bcc: [negocio], reply_to: negocio, subject: `Hoja de Reclamación N.° ${h.numero} — Battcakes`, html, text });
+  // Aviso para el negocio, con acceso directo al panel de respuesta.
   const aviso = `<p style="font-family:Arial,sans-serif;font-size:14px;background:#F5ECF8;padding:12px;border-radius:8px"><b>Nueva hoja registrada.</b> Plazo máximo de respuesta: 15 días hábiles. El consumidor pidió respuesta por <b>${h.canal_respuesta === 'whatsapp' ? 'WhatsApp o llamada' : 'correo electrónico'}</b>. Responde desde el panel: <a href="${PROVEEDOR.web}/admin-reclamaciones">${PROVEEDOR.web}/admin-reclamaciones</a></p>`;
   await enviarResend(env, { from, to: [negocio], reply_to: h.email, subject: `[Libro de Reclamaciones] Nueva hoja N.° ${h.numero} (${h.tipo === 'queja' ? 'queja' : 'reclamo'})`, html: aviso + html, text: `Nueva hoja registrada. Responde desde ${PROVEEDOR.web}/admin-reclamaciones\n\n` + text });
 }
