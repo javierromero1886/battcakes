@@ -50,9 +50,11 @@ export async function onRequestPut({ request, env }) {
   const { valor, error } = validar(seccion, body.valor);
   if (error) return json({ ok: false, error }, 422);
   const ahora = new Date().toISOString();
-  await env.DB.prepare(
-    'INSERT INTO contenido (seccion, valor, actualizado_en) VALUES (?, ?, ?) ON CONFLICT(seccion) DO UPDATE SET valor = excluded.valor, actualizado_en = excluded.actualizado_en'
-  ).bind(seccion, JSON.stringify(valor), ahora).run();
+  try {
+    await env.DB.prepare(
+      'INSERT INTO contenido (seccion, valor, actualizado_en) VALUES (?, ?, ?) ON CONFLICT(seccion) DO UPDATE SET valor = excluded.valor, actualizado_en = excluded.actualizado_en'
+    ).bind(seccion, JSON.stringify(valor), ahora).run();
+  } catch (e) { return errorBase(e); }
   return json({ ok: true, seccion, valor, actualizado_en: ahora });
 }
 
@@ -61,7 +63,7 @@ export async function onRequestDelete({ request, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ ok: false, error: 'Solicitud inválida.' }, 400); }
   if (!SECCIONES.includes(body && body.seccion)) return json({ ok: false, error: 'Sección inválida.' }, 400);
-  await env.DB.prepare('DELETE FROM contenido WHERE seccion = ?').bind(body.seccion).run();
+  try { await env.DB.prepare('DELETE FROM contenido WHERE seccion = ?').bind(body.seccion).run(); } catch (e) { return errorBase(e); }
   const { contenido } = await leerContenido(env);
   return json({ ok: true, seccion: body.seccion, valor: contenido[body.seccion] });
 }
@@ -215,4 +217,11 @@ function validarCotizador(v) {
   if (!c.franjas.length) return { error: 'Agrega al menos un horario de entrega (HH:MM).' };
   c.fechas_bloqueadas = [...new Set((Array.isArray(v.fechas_bloqueadas) ? v.fechas_bloqueadas : []).map((x) => texto(x, 10)).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().slice(0, 366);
   return { valor: c };
+}
+
+// Error de la base (lo más común: falta crear la tabla "contenido" en D1 con schema.sql).
+function errorBase(e) {
+  console.log('D1 contenido error:', e.message);
+  const falta = /no such table/i.test(e.message);
+  return json({ ok: false, error: falta ? 'Falta crear la tabla "contenido" en D1 (ejecuta su bloque de schema.sql en la consola de D1).' : 'Error de base de datos: ' + e.message }, 500);
 }
