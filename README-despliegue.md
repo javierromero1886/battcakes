@@ -142,3 +142,14 @@ Puesta en marcha (una vez):
 - **Cálculo**: lo hace el servidor (`/api/cotizar`) en céntimos: base proporcional + recargos + adicionales + delivery; adelanto redondeado hacia arriba. Valida 72 h en hora de Lima, fechas bloqueadas y reglas de pisos.
 - Al enviar por WhatsApp se guarda la cotización con un código (`C-XXXXXX`, sin datos personales) que se ve en «Últimas cotizaciones». La cotización no reserva fecha ni es un pedido.
 - Puesta en marcha: ejecuta en D1 el bloque `CREATE TABLE IF NOT EXISTS cotizaciones …` de `schema.sql` (y su índice).
+
+### 13.1 Configuración completa del cotizador (versión 2)
+
+En `/admin` → Cotizador hay cinco bloques plegables:
+1. **General**: título y subtítulo que ve el cliente, anticipación, adelanto, vigencia, pausa y nota bajo el precio.
+2. **Productos**: nombre, descripción, ícono (emoji) o foto, unidad (porciones/unidades), cantidades que se pueden elegir, precio por la cantidad base, 2 pisos (desde cuántas y recargo), anticipación propia, orden y visibilidad.
+3. **Opciones para personalizar**: grupos libres (sabor, relleno, cobertura, tema, decoración…). Cada grupo es un paso del asistente: una opción o varias, obligatorio u opcional, a qué productos aplica, y opciones con nombre, descripción, precio, ícono, color de muestra o foto, orden y visibilidad.
+4. **Entrega y delivery**: zonas con precio, descripción e ícono.
+5. **Horarios y fechas**: horarios de entrega y calendario de fechas bloqueadas.
+
+El cliente ve un asistente por pasos con tarjetas (fotos, colores o íconos y el precio de cada opción), barra de progreso y total estimado siempre visible. **Vista previa**: `https://battcakes.com/?vista-previa=cotizador#pedidos` muestra el cotizador con las reglas guardadas aunque esté oculto. Las reglas guardadas con el formato anterior se convierten solas.

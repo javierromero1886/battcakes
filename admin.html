@@ -36,13 +36,28 @@
   .pie{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px;position:sticky;bottom:0;background:var(--bg);padding:12px 0;border-top:1px solid var(--line)}
   .interruptor{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:8px}
   .chip-on{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:#D8F3E3;color:#0B5F32}.chip-off{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:#EEE;color:#555}
-  .qprod{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
-  .qprod .campo input,.qprod .campo select,.qopc input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;width:100%}
-  .qprod .campo label{font-size:.82rem}
-  .q-listas{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:22px}
-  .qopc{display:grid;grid-template-columns:1fr 90px auto;gap:6px;margin-bottom:6px}
+  .qbloque{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-top:14px}
+  .qbloque>summary{cursor:pointer;padding:16px 18px;font-weight:800;font-size:1.05rem;list-style:none;display:flex;justify-content:space-between;gap:10px}
+  .qbloque>summary::after{content:"▾";color:var(--muted)}.qbloque[open]>summary::after{content:"▴"}
+  .qbloque>.qcuerpo{padding:0 18px 18px}
+  .qtarjeta{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--bg)}
+  .qtarjeta.oculto{opacity:.6}
+  .qcab{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .qcab b{font-size:1rem}
+  .qrej{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .qrej .ancho2{grid-column:span 2}.qrej .ancho4{grid-column:1/-1}
+  .qc{display:grid;gap:4px;font-size:.82rem}.qc>span{font-weight:700;color:var(--muted)}
+  .qc input,.qc select,.qopc input,.qopc select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:.9rem;width:100%;min-width:0}
+  .qopc{display:grid;grid-template-columns:52px minmax(0,1.3fr) minmax(0,1.5fr) 92px 120px 150px auto;gap:6px;align-items:center;margin-bottom:6px}
+  .qopc-cab{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .qopc .qcolor{display:flex;gap:4px;align-items:center}.qopc input[type=color]{width:38px;height:34px;padding:2px}
+  .qopc .qacc{display:flex;gap:4px}
+  .qchecks{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.88rem}
+  .qmuestra{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);font-size:18px;overflow:hidden;background:var(--card)}
+  .qmuestra img{width:100%;height:100%;object-fit:cover}
   .qhist{font-size:.9rem;border-bottom:1px solid var(--line);padding:8px 0}
-  @media(max-width:720px){.qprod{grid-template-columns:1fr 1fr}}
+  .qfechas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.qfechas span{background:var(--accent-soft);border-radius:999px;padding:4px 6px 4px 12px;font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
+  @media(max-width:860px){.qrej{grid-template-columns:1fr 1fr}.qopc{grid-template-columns:44px 1fr 1fr;}.qopc .qdesc,.qopc .qcolor,.qopc .qfoto{grid-column:span 3}.qopc-cab{display:none}}
   @media(max-width:720px){.fila{grid-template-columns:1fr}.fila img{width:100%;height:180px}.fila .acciones{flex-direction:row;flex-wrap:wrap}.campos{grid-template-columns:1fr}.fila .datos .par{grid-template-columns:1fr}}
 </style>
 </head>
@@ -98,26 +113,14 @@
       <div class="interruptor">
         <label class="check-inline"><input type="checkbox" id="q-activo"> <b>Mostrar el cotizador automático en la web</b></label>
         <span id="q-estado-web"></span>
+        <a href="/?vista-previa=cotizador#pedidos" target="_blank" rel="noopener" style="margin-left:auto;font-weight:800">Vista previa ↗</a>
       </div>
-      <p class="ayuda">Apagado, la web muestra el formulario simple de WhatsApp de siempre. Encendido, los clientes eligen producto, tamaño, sabor, adicionales, entrega y fecha, y ven el precio calculado con estas reglas (en el servidor). La cotización no reserva fecha: se confirma por WhatsApp con el adelanto. Precios en soles, con IGV.</p>
-      <div class="campos">
-        <div class="campo"><label class="check-inline"><input type="checkbox" id="q-pausado"> Pausar pedidos nuevos (el cotizador muestra un aviso)</label></div>
-        <div class="campo"><label for="q-anticipacion">Anticipación mínima (horas)</label><input id="q-anticipacion" type="number" min="0" max="720"></div>
-        <div class="campo"><label for="q-adelanto">Adelanto (%)</label><input id="q-adelanto" type="number" min="0" max="100"></div>
-        <div class="campo"><label for="q-vigencia">Vigencia de la cotización (horas)</label><input id="q-vigencia" type="number" min="1" max="720"></div>
-        <div class="campo"><label for="q-piso">Recargo por segundo piso (S/)</label><input id="q-piso" type="number" min="0" step="0.5"></div>
-        <div class="campo"><label for="q-franjas">Horarios de entrega (separados por coma)</label><input id="q-franjas" placeholder="10:00, 12:00, 16:00"></div>
-        <div class="campo ancho"><label for="q-bloqueadas">Fechas sin entregas (AAAA-MM-DD, separadas por coma)</label><input id="q-bloqueadas" placeholder="2026-12-24, 2026-12-25"></div>
-        <div class="campo ancho"><label for="q-nota">Nota bajo el precio</label><input id="q-nota" maxlength="300"></div>
-      </div>
-      <h3 style="margin-top:22px">Productos y precio base</h3>
-      <p class="ayuda">Precio base = precio por la cantidad base; se escala en proporción (ej.: S/ 120 por 20 porciones → 40 porciones = S/ 240). «Personalizable» habilita sabor, relleno y acabado.</p>
-      <div id="q-productos"></div>
-      <button class="mini" type="button" id="q-add-producto">+ Agregar producto</button>
-      <div class="q-listas" id="q-listas"></div>
-      <h3 style="margin-top:22px">Últimas cotizaciones</h3>
-      <p class="ayuda">El cliente envía el código por WhatsApp; aquí verificas el precio que vio. No se guardan datos personales.</p>
-      <div id="q-historial"></div>
+      <p class="ayuda">Apagado, la web muestra el formulario simple de WhatsApp. Encendido, el cliente cotiza paso a paso con tarjetas visuales y ve el precio al instante. La <b>vista previa</b> muestra el cotizador con las reglas <b>guardadas</b> aunque esté apagado (solo para ti). Precios en soles con IGV; la cotización no reserva fecha.</p>
+      <div id="q-editor"></div>
+      <details class="qbloque"><summary>Últimas cotizaciones</summary><div class="qcuerpo">
+        <p class="ayuda">El cliente envía el código por WhatsApp; aquí verificas el precio que vio. No se guardan datos personales.</p>
+        <div id="q-historial"></div>
+      </div></details>
     </section>
 
     <div class="pie">
@@ -211,69 +214,99 @@
   CAMPOS_CONTACTO.forEach(function(k){document.getElementById('c-'+k).addEventListener('input',function(e){datos.contacto[k]=e.target.value;sinGuardar.contacto=true;});});
 
   /* ---------- cotizador automático ---------- */
-  var LISTAS_Q=[['sabores','Sabores (recargo)'],['rellenos','Rellenos (recargo)'],['acabados','Acabados (recargo)'],['extras','Adicionales'],['entrega','Entrega y delivery']];
+  // Editor genérico: cada campo lleva data-p (ruta dentro de datos.cotizador, p. ej. "grupos.0.opciones.2.precio") y data-t (tipo).
   var soles=function(c){return (Number(c)||0)/100;},cent=function(s){return Math.round((Number(s)||0)*100);};
   var dinero=function(c){return 'S/ '+(c/100).toFixed(2);};
+  var cotizaciones=[],abiertos={'q-general':true};
+  function ruta(p){return p.split('.').map(function(k){return /^\d+$/.test(k)?Number(k):k;});}
+  function leer(p){return ruta(p).reduce(function(o,k){return o==null?o:o[k];},datos.cotizador);}
+  function poner(p,v){var r=ruta(p),o=datos.cotizador;for(var i=0;i<r.length-1;i++)o=o[r[i]];o[r[r.length-1]]=v;}
+  function campo(etq,p,t,attrs,clase){var v=leer(p),ctl;
+    if(t==='bool')return '<label class="check-inline'+(clase?' '+clase:'')+'"><input type="checkbox" data-p="'+p+'" data-t="bool"'+(v?' checked':'')+'> '+etq+'</label>';
+    if(t==='soles')v=soles(v);else if(t==='nums'||t==='txts')v=(v||[]).join(', ');
+    if(t==='sel'){ctl='<select data-p="'+p+'" data-t="txt">'+attrs.map(function(o){return '<option value="'+esc(o[0])+'"'+(o[0]===leer(p)?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
+    else ctl='<input data-p="'+p+'" data-t="'+t+'" value="'+esc(v)+'"'+(t==='num'||t==='soles'?' type="number" min="0"'+(t==='soles'?' step="0.5"':''):'')+(attrs||'')+'>';
+    return '<label class="qc'+(clase?' '+clase:'')+'"><span>'+etq+'</span>'+ctl+'</label>';}
+  function muestra(o){return '<span class="qmuestra" style="'+(o.color?'background:'+esc(o.color):'')+'">'+(o.foto?'<img src="'+esc(o.foto)+'" alt="">':esc(o.icono||''))+'</span>';}
+  function fotoSel(p){var actual=leer(p)||'',ops=[''].concat(FOTOS_SITIO);if(actual&&ops.indexOf(actual)<0)ops.push(actual);
+    return '<select data-p="'+p+'" data-t="txt" data-repintar aria-label="Foto">'+ops.map(function(f){return '<option value="'+esc(f)+'"'+(f===actual?' selected':'')+'>'+(f?esc(f.replace(/^img\/|^\/api\/foto\/subidas\//,'')):'Sin foto')+'</option>';}).join('')+'</select>'+
+      (fotosHabilitadas?'<label class="mini" style="margin-top:4px">Subir…<input type="file" accept="image/jpeg,image/png,image/webp" data-subir="'+p+'" hidden></label>':'');}
+  function acc(p,i,n){return '<span class="qacc"><button class="mini" type="button" data-a="up" data-p="'+p+'" data-i="'+i+'"'+(i===0?' disabled':'')+' aria-label="Subir">↑</button><button class="mini" type="button" data-a="down" data-p="'+p+'" data-i="'+i+'"'+(i===n-1?' disabled':'')+' aria-label="Bajar">↓</button><button class="mini peligro" type="button" data-a="del" data-p="'+p+'" data-i="'+i+'" aria-label="Eliminar">✕</button></span>';}
+  function tablaOpciones(p,conColor){var arr=leer(p);
+    return (arr.length?'<div class="qopc qopc-cab"><span></span><span>Nombre</span><span class="qdesc">Descripción (opcional)</span><span>Precio S/</span><span class="qcolor">'+(conColor?'Ícono / color':'Ícono')+'</span><span class="qfoto">'+(conColor?'Foto':'')+'</span><span></span></div>':'')+
+      arr.map(function(o,i){var b=p+'.'+i;
+        return '<div class="qopc'+(o.visible===false?' oculto':'')+'">'+muestra(o)+
+          '<input data-p="'+b+'.nombre" data-t="txt" value="'+esc(o.nombre)+'" maxlength="80" aria-label="Nombre">'+
+          '<input class="qdesc" data-p="'+b+'.descripcion" data-t="txt" value="'+esc(o.descripcion||'')+'" maxlength="140" placeholder="Descripción" aria-label="Descripción">'+
+          '<input data-p="'+b+'.precio" data-t="soles" type="number" min="0" step="0.5" value="'+esc(soles(o.precio))+'" aria-label="Precio">'+
+          '<span class="qcolor"><input data-p="'+b+'.icono" data-t="txt" data-repintar value="'+esc(o.icono||'')+'" maxlength="8" placeholder="😀" style="width:52px" aria-label="Ícono (emoji)">'+
+            (conColor?'<input type="color" data-p="'+b+'.color" data-t="txt" data-repintar value="'+esc(o.color||'#ffffff')+'" aria-label="Color">'+(o.color?'<button class="mini" type="button" data-a="clear" data-p="'+b+'.color" title="Quitar color">⨯</button>':''):'')+'</span>'+
+          '<span class="qfoto">'+(conColor?fotoSel(b+'.foto'):'')+'</span>'+
+          '<span class="qacc"><label class="check-inline" title="Visible"><input type="checkbox" data-p="'+b+'.visible" data-t="bool"'+(o.visible!==false?' checked':'')+'>👁</label>'+acc(p,i,arr.length)+'</span></div>';
+      }).join('')+'<button class="mini" type="button" data-a="add" data-p="'+p+'">+ Agregar opción</button>';}
+  function bloque(id,titulo,cuerpo){return '<details class="qbloque" data-bloque="'+id+'"'+(abiertos[id]?' open':'')+'><summary>'+titulo+'</summary><div class="qcuerpo">'+cuerpo+'</div></details>';}
   function pintarCotizador(){
     var q=datos.cotizador;
     document.getElementById('q-activo').checked=q.activo;
     document.getElementById('q-estado-web').innerHTML=q.activo?'<span class="chip-on">Visible en la web</span>':'<span class="chip-off">Oculto en la web</span>';
-    document.getElementById('q-pausado').checked=q.pausado;
-    document.getElementById('q-anticipacion').value=q.anticipacion_horas;
-    document.getElementById('q-adelanto').value=q.adelanto_pct;
-    document.getElementById('q-vigencia').value=q.vigencia_horas;
-    document.getElementById('q-piso').value=soles(q.segundo_piso);
-    document.getElementById('q-franjas').value=q.franjas.join(', ');
-    document.getElementById('q-bloqueadas').value=q.fechas_bloqueadas.join(', ');
-    document.getElementById('q-nota').value=q.nota;
-    document.getElementById('q-productos').innerHTML=q.productos.map(function(p,i){
-      return '<div class="qprod" data-i="'+i+'">'+
-        '<div class="campo"><label>Nombre</label><input data-q="nombre" value="'+esc(p.nombre)+'" maxlength="60"></div>'+
-        '<div class="campo"><label>Identificador</label><input data-q="id" value="'+esc(p.id)+'" maxlength="30"></div>'+
-        '<div class="campo"><label>Se vende por</label><select data-q="unidad"><option value="porciones"'+(p.unidad==='porciones'?' selected':'')+'>porciones</option><option value="unidades"'+(p.unidad!=='porciones'?' selected':'')+'>unidades</option></select></div>'+
-        '<div class="campo"><label>Cantidades (coma)</label><input data-q="cantidades" value="'+esc(p.cantidades.join(', '))+'"></div>'+
-        '<div class="campo"><label>Cantidad base</label><input data-q="cantidad_base" type="number" min="1" value="'+esc(p.cantidad_base)+'"></div>'+
-        '<div class="campo"><label>Precio base (S/)</label><input data-q="precio_base" type="number" min="0" step="0.5" value="'+esc(soles(p.precio_base))+'"></div>'+
-        '<div class="campo"><label>Anticipación propia (h)</label><input data-q="anticipacion_horas" type="number" min="0" value="'+esc(p.anticipacion_horas)+'"></div>'+
-        '<div class="campo"><label>2 pisos desde (cant.)</label><input data-q="min_2_pisos" type="number" min="0" value="'+esc(p.min_2_pisos)+'"></div>'+
-        '<label class="check-inline"><input type="checkbox" data-q="personalizable"'+(p.personalizable?' checked':'')+'> Personalizable</label>'+
-        '<label class="check-inline"><input type="checkbox" data-q="pisos"'+(p.pisos?' checked':'')+'> Permite 2 pisos</label>'+
-        '<span></span><button class="mini peligro" type="button" data-qborrar>Eliminar</button></div>';
-    }).join('');
-    document.getElementById('q-listas').innerHTML=LISTAS_Q.map(function(l){
-      return '<div data-lista="'+l[0]+'"><h3>'+l[1]+'</h3>'+q[l[0]].map(function(o,i){
-        return '<div class="qopc" data-i="'+i+'"><input data-o="nombre" value="'+esc(o.nombre)+'" maxlength="80" aria-label="Nombre"><input data-o="precio" type="number" min="0" step="0.5" value="'+esc(soles(o.precio))+'" aria-label="Precio S/"><button class="mini peligro" type="button" data-oborrar aria-label="Quitar">×</button></div>';
-      }).join('')+'<button class="mini" type="button" data-oadd>+ Opción</button></div>';
-    }).join('');
+    var general='<div class="qrej">'+campo('Título del cotizador','titulo','txt',' maxlength="80"','ancho2')+campo('Subtítulo','subtitulo','txt',' maxlength="160"','ancho2')+
+      campo('Anticipación mínima (horas)','anticipacion_horas','num',' max="720"')+campo('Adelanto (%)','adelanto_pct','num',' max="100"')+campo('Vigencia de la cotización (horas)','vigencia_horas','num',' max="720"')+
+      '<div class="qc" style="align-self:center">'+campo('Pausar pedidos nuevos','pausado','bool')+'</div>'+campo('Nota bajo el precio','nota','txt',' maxlength="300"','ancho4')+'</div>';
+    var prods=q.productos.map(function(p,i){var b='productos.'+i;
+      return '<div class="qtarjeta'+(p.visible===false?' oculto':'')+'"><div class="qcab"><b>'+muestra(p)+' '+esc(p.nombre)+'</b><span class="qacc">'+campo('Visible',b+'.visible','bool')+acc('productos',i,q.productos.length)+'</span></div><div class="qrej">'+
+        campo('Nombre',b+'.nombre','txt',' maxlength="60"')+campo('Identificador (interno)',b+'.id','txt',' maxlength="30"')+campo('Ícono (emoji)',b+'.icono','txt',' maxlength="8" data-repintar')+'<label class="qc"><span>Foto</span>'+fotoSel(b+'.foto')+'</label>'+
+        campo('Descripción corta',b+'.descripcion','txt',' maxlength="140"','ancho4')+
+        campo('Se vende por',b+'.unidad','sel',[['porciones','porciones'],['unidades','unidades']])+campo('Cantidades que puede elegir (coma)',b+'.cantidades','nums','','ancho2')+campo('Anticipación propia (h)',b+'.anticipacion_horas','num')+
+        campo('Cantidad base',b+'.cantidad_base','num',' min="1"')+campo('Precio por la cantidad base (S/)',b+'.precio_base','soles')+
+        '<div class="qc" style="align-self:center">'+campo('Permite 2 pisos',b+'.pisos','bool')+'</div>'+(p.pisos?campo('2 pisos desde (cantidad)',b+'.min_2_pisos','num'):'<span></span>')+
+        (p.pisos?campo('Recargo 2 pisos (S/)',b+'.recargo_2_pisos','soles'):'')+
+        '<p class="ayuda ancho4" style="margin:0">Ejemplo: '+esc(p.cantidad_base)+' '+esc(p.unidad)+' = '+dinero(p.precio_base)+(p.cantidades.length?' · '+p.cantidades[p.cantidades.length-1]+' '+esc(p.unidad)+' = '+dinero(Math.round(p.precio_base*p.cantidades[p.cantidades.length-1]/(p.cantidad_base||1))):'')+'</p></div></div>';
+    }).join('')+'<button class="mini" type="button" data-a="add" data-p="productos">+ Agregar producto</button>';
+    var grupos='<p class="ayuda">Cada grupo es un paso del cotizador (sabor, relleno, decoración, tema…). «Una opción» muestra tarjetas para elegir una; «Varias» deja marcar las que quiera. Si no marcas productos, el grupo aparece para todos.</p>'+
+      q.grupos.map(function(g,i){var b='grupos.'+i;
+        return '<div class="qtarjeta'+(g.visible===false?' oculto':'')+'"><div class="qcab"><b>Paso: '+esc(g.titulo)+'</b><span class="qacc">'+campo('Visible',b+'.visible','bool')+acc('grupos',i,q.grupos.length)+'</span></div><div class="qrej">'+
+          campo('Título',b+'.titulo','txt',' maxlength="60"')+campo('Identificador (interno)',b+'.id','txt',' maxlength="30"')+campo('El cliente elige',b+'.tipo','sel',[['uno','Una opción'],['varios','Varias opciones']])+
+          '<div class="qc" style="align-self:center">'+campo('Obligatorio',b+'.obligatorio','bool')+'</div>'+campo('Texto de ayuda (opcional)',b+'.ayuda','txt',' maxlength="140"','ancho4')+
+          '<div class="qc ancho4"><span>Aparece para</span><div class="qchecks">'+q.productos.map(function(p){return '<label class="check-inline"><input type="checkbox" data-p="'+b+'.productos" data-t="set" data-v="'+esc(p.id)+'"'+(g.productos.indexOf(p.id)>=0?' checked':'')+'> '+esc(p.nombre)+'</label>';}).join('')+(g.productos.length?'':'<small style="color:var(--muted)">(todos los productos)</small>')+'</div></div></div>'+
+          '<div style="margin-top:12px">'+tablaOpciones(b+'.opciones',true)+'</div></div>';
+      }).join('')+'<button class="mini" type="button" data-a="add" data-p="grupos">+ Agregar grupo de opciones</button>';
+    var fechas='<div class="qrej">'+campo('Horarios de entrega (HH:MM, separados por coma)','franjas','txts','','ancho4')+
+      '<div class="qc ancho4"><span>Fechas sin entregas</span><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="date" id="q-nueva-fecha" style="max-width:200px"><button class="mini" type="button" data-a="fecha-add">Bloquear fecha</button></div>'+
+      '<div class="qfechas">'+(q.fechas_bloqueadas.length?q.fechas_bloqueadas.map(function(f,i){return '<span>'+esc(f.split('-').reverse().join('/'))+'<button class="mini peligro" type="button" data-a="del" data-p="fechas_bloqueadas" data-i="'+i+'" aria-label="Desbloquear">✕</button></span>';}).join(''):'<small style="color:var(--muted)">Ninguna</small>')+'</div></div></div>';
+    document.getElementById('q-editor').innerHTML=bloque('q-general','1 · General',general)+bloque('q-productos','2 · Productos y precio base ('+q.productos.length+')',prods)+
+      bloque('q-grupos','3 · Opciones para personalizar ('+q.grupos.length+' grupos)',grupos)+bloque('q-entrega','4 · Entrega y delivery ('+q.entrega.length+')',tablaOpciones('entrega',false))+bloque('q-fechas','5 · Horarios y fechas',fechas);
     document.getElementById('q-historial').innerHTML=(cotizaciones.length?cotizaciones.map(function(c){var d=c.detalle||{};
       return '<div class="qhist"><b>'+esc(c.codigo)+'</b> · '+esc(new Date(c.creado_en).toLocaleString('es-PE',{timeZone:'America/Lima'}))+' · '+esc(d.producto)+' '+esc(d.cantidad)+' '+esc(d.unidad)+' · entrega '+esc(d.fecha)+' '+esc(d.franja)+' · <b>'+dinero(c.total)+'</b></div>';
     }).join(''):'<p class="ayuda">Aún no hay cotizaciones.</p>');
   }
-  var cotizaciones=[];
-  function leerCampoQ(id,fn){var el=document.getElementById(id);el.addEventListener('input',function(){fn(datos.cotizador,el);sinGuardar.cotizador=true;});}
-  leerCampoQ('q-pausado',function(q,el){q.pausado=el.checked;});
-  leerCampoQ('q-anticipacion',function(q,el){q.anticipacion_horas=Number(el.value);});
-  leerCampoQ('q-adelanto',function(q,el){q.adelanto_pct=Number(el.value);});
-  leerCampoQ('q-vigencia',function(q,el){q.vigencia_horas=Number(el.value);});
-  leerCampoQ('q-piso',function(q,el){q.segundo_piso=cent(el.value);});
-  leerCampoQ('q-franjas',function(q,el){q.franjas=el.value.split(',').map(function(s){return s.trim();}).filter(Boolean);});
-  leerCampoQ('q-bloqueadas',function(q,el){q.fechas_bloqueadas=el.value.split(',').map(function(s){return s.trim();}).filter(Boolean);});
-  leerCampoQ('q-nota',function(q,el){q.nota=el.value;});
-  document.getElementById('q-productos').addEventListener('input',function(e){var f=e.target.closest('.qprod'),k=e.target.getAttribute('data-q');if(!f||!k)return;var p=datos.cotizador.productos[Number(f.getAttribute('data-i'))];
-    if(e.target.type==='checkbox')p[k]=e.target.checked;else if(k==='precio_base')p[k]=cent(e.target.value);
-    else if(k==='cantidades')p[k]=e.target.value.split(',').map(function(s){return Number(s.trim());}).filter(function(n){return n>0;});
-    else if(k==='cantidad_base'||k==='anticipacion_horas'||k==='min_2_pisos')p[k]=Number(e.target.value);else p[k]=e.target.value;
-    sinGuardar.cotizador=true;});
-  document.getElementById('q-productos').addEventListener('click',function(e){if(!e.target.hasAttribute('data-qborrar'))return;var i=Number(e.target.closest('.qprod').getAttribute('data-i'));
-    if(!confirm('¿Quitar este producto del cotizador?'))return;datos.cotizador.productos.splice(i,1);sinGuardar.cotizador=true;pintarCotizador();});
-  document.getElementById('q-add-producto').addEventListener('click',function(){datos.cotizador.productos.push({id:'producto-'+(datos.cotizador.productos.length+1),nombre:'Nuevo producto',unidad:'unidades',cantidad_base:12,precio_base:0,cantidades:[12],personalizable:false,pisos:false,min_2_pisos:0,anticipacion_horas:0});sinGuardar.cotizador=true;pintarCotizador();});
-  var qlistas=document.getElementById('q-listas');
-  qlistas.addEventListener('input',function(e){var l=e.target.closest('[data-lista]'),f=e.target.closest('.qopc'),k=e.target.getAttribute('data-o');if(!l||!f||!k)return;
-    var o=datos.cotizador[l.getAttribute('data-lista')][Number(f.getAttribute('data-i'))];o[k]=k==='precio'?cent(e.target.value):e.target.value;sinGuardar.cotizador=true;});
-  qlistas.addEventListener('click',function(e){var l=e.target.closest('[data-lista]');if(!l)return;var arr=datos.cotizador[l.getAttribute('data-lista')];
-    if(e.target.hasAttribute('data-oadd'))arr.push({nombre:'Nueva opción',precio:0});
-    else if(e.target.hasAttribute('data-oborrar'))arr.splice(Number(e.target.closest('.qopc').getAttribute('data-i')),1);
-    else return;sinGuardar.cotizador=true;pintarCotizador();});
+  var NUEVO={productos:function(){return {id:'producto-'+(datos.cotizador.productos.length+1),nombre:'Nuevo producto',descripcion:'',icono:'🍰',foto:'',unidad:'unidades',cantidad_base:12,precio_base:0,cantidades:[12],pisos:false,min_2_pisos:0,recargo_2_pisos:0,anticipacion_horas:0,visible:false};},
+    grupos:function(){return {id:'grupo-'+(datos.cotizador.grupos.length+1),titulo:'Nuevo paso',ayuda:'',tipo:'uno',obligatorio:false,productos:[],visible:false,opciones:[]};},
+    opcion:function(){return {nombre:'Nueva opción',descripcion:'',icono:'',color:'',foto:'',precio:0,visible:true};},
+    entrega:function(){return {nombre:'Nueva zona',descripcion:'',icono:'🛵',precio:0,visible:true};}};
+  var editor=document.getElementById('q-editor');
+  editor.addEventListener('toggle',function(e){var d=e.target.closest&&e.target.closest('[data-bloque]');if(d)abiertos[d.getAttribute('data-bloque')]=d.open;},true);
+  function alEditar(e){var el=e.target,p=el.getAttribute('data-p'),t=el.getAttribute('data-t');if(!p||!t)return;
+    var v;if(t==='bool')v=el.checked;else if(t==='num')v=el.value===''?0:Number(el.value);else if(t==='soles')v=cent(el.value);
+    else if(t==='nums')v=el.value.split(',').map(function(s){return Number(s.trim());}).filter(function(n){return n>0;});
+    else if(t==='txts')v=el.value.split(',').map(function(s){return s.trim();}).filter(Boolean);
+    else if(t==='set'){var arr=leer(p).slice(),id=el.getAttribute('data-v'),k=arr.indexOf(id);if(el.checked&&k<0)arr.push(id);if(!el.checked&&k>=0)arr.splice(k,1);v=arr;}
+    else v=el.value;
+    poner(p,v);sinGuardar.cotizador=true;
+    if(e.type==='change'&&(t==='bool'||t==='set'||el.tagName==='SELECT'||el.hasAttribute('data-repintar')))pintarCotizador();}
+  editor.addEventListener('input',function(e){if(e.target.type!=='checkbox'&&e.target.type!=='file')alEditar(e);});
+  editor.addEventListener('change',function(e){
+    if(e.target.hasAttribute('data-subir')){var p=e.target.getAttribute('data-subir'),f=e.target.files[0];if(!f)return;
+      if(f.size>5*1024*1024){alert('La foto pesa más de 5 MB.');return;}estado(gmsg,'Subiendo foto…');
+      pedir('POST',null,{tipo:f.type,datos:f}).then(function(j){poner(p,j.foto);sinGuardar.cotizador=true;pintarCotizador();estado(gmsg,'Foto subida. Recuerda guardar los cambios.','ok');}).catch(function(er){estado(gmsg,er.message,'err');});return;}
+    alEditar(e);});
+  editor.addEventListener('click',function(e){var b=e.target.closest('button[data-a]');if(!b)return;var a=b.getAttribute('data-a'),p=b.getAttribute('data-p'),i=Number(b.getAttribute('data-i'));
+    if(a==='fecha-add'){var v=document.getElementById('q-nueva-fecha').value;if(!v)return;if(datos.cotizador.fechas_bloqueadas.indexOf(v)<0){datos.cotizador.fechas_bloqueadas.push(v);datos.cotizador.fechas_bloqueadas.sort();}}
+    else if(a==='clear')poner(p,'');
+    else{var arr=leer(p);
+      if(a==='add')arr.push((NUEVO[p]||NUEVO.opcion)());
+      else if(a==='del'){if(p!=='fechas_bloqueadas'&&!confirm('¿Eliminar «'+(arr[i].nombre||arr[i].titulo)+'»?'))return;arr.splice(i,1);}
+      else{var j=i+(a==='up'?-1:1);if(j<0||j>=arr.length)return;var t=arr[i];arr[i]=arr[j];arr[j]=t;}}
+    sinGuardar.cotizador=true;pintarCotizador();});
   // El interruptor guarda al instante (con confirmación), para no depender de «Guardar cambios».
   document.getElementById('q-activo').addEventListener('change',function(e){
     var on=e.target.checked;

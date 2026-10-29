@@ -12,6 +12,7 @@
  */
 import { autorizado } from './admin.js';
 import { leerContenido, SECCIONES } from './contenido.js';
+import { normalizar } from '../../motor-cotizador.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
@@ -157,63 +158,101 @@ function validar(seccion, v) {
 }
 
 const entero = (v, min, max) => { const n = Number(v); return Number.isInteger(n) && n >= min && n <= max ? n : null; };
+const ICONO = (v) => texto(v, 8);
+const COLOR = (v) => { const c = texto(v, 7); return /^#[0-9a-fA-F]{6}$/.test(c) ? c.toUpperCase() : ''; };
+const FOTO_OPC = (v) => { const f = texto(v, 120); return RUTA_FOTO.test(f) ? f : ''; };
 
-// Reglas del cotizador automático. Importes en céntimos enteros (el panel convierte desde soles).
-function validarCotizador(v) {
+// Reglas del cotizador automático (formato en motor-cotizador.js). Importes en céntimos enteros (el panel convierte desde soles).
+function validarCotizador(entrada) {
+  const v = normalizar(entrada);
   if (!v || typeof v !== 'object') return { error: 'Reglas del cotizador inválidas.' };
   const c = {
+    version: 2,
     activo: !!v.activo,
     pausado: !!v.pausado,
+    titulo: texto(v.titulo, 80) || 'Cotiza tu pedido en línea',
+    subtitulo: texto(v.subtitulo, 160),
     anticipacion_horas: entero(v.anticipacion_horas, 0, 720),
     adelanto_pct: entero(v.adelanto_pct, 0, 100),
     vigencia_horas: entero(v.vigencia_horas, 1, 720),
-    segundo_piso: entero(v.segundo_piso, 0, 9999999),
     nota: texto(v.nota, 300),
   };
   if (c.anticipacion_horas == null) return { error: 'Anticipación: entre 0 y 720 horas.' };
   if (c.adelanto_pct == null) return { error: 'Adelanto: entre 0 y 100 %.' };
   if (c.vigencia_horas == null) return { error: 'Vigencia: entre 1 y 720 horas.' };
-  if (c.segundo_piso == null) return { error: 'Recargo de segundo piso inválido.' };
 
   if (!Array.isArray(v.productos) || !v.productos.length || v.productos.length > 20) return { error: 'Agrega entre 1 y 20 productos al cotizador.' };
   c.productos = [];
   const ids = new Set();
   for (const [i, p] of v.productos.entries()) {
-    const n = i + 1;
+    const n = `Producto ${i + 1}`;
     const item = {
       id: texto(p && p.id, 30).toLowerCase(),
       nombre: texto(p && p.nombre, 60),
+      descripcion: texto(p && p.descripcion, 140),
+      icono: ICONO(p && p.icono),
+      foto: FOTO_OPC(p && p.foto),
       unidad: p && p.unidad === 'porciones' ? 'porciones' : 'unidades',
       cantidad_base: entero(p && p.cantidad_base, 1, 1000),
       precio_base: entero(p && p.precio_base, 0, 9999999),
       cantidades: Array.isArray(p && p.cantidades) ? [...new Set(p.cantidades.map(Number))].filter((x) => Number.isInteger(x) && x > 0 && x <= 1000).sort((a, b) => a - b).slice(0, 20) : [],
-      personalizable: !!(p && p.personalizable),
       pisos: !!(p && p.pisos),
       min_2_pisos: entero(p && p.min_2_pisos, 0, 1000) || 0,
+      recargo_2_pisos: entero(p && p.recargo_2_pisos, 0, 9999999) || 0,
       anticipacion_horas: entero(p && p.anticipacion_horas, 0, 720) || 0,
+      visible: !(p && p.visible === false),
     };
-    if (!/^[a-z0-9-]{2,30}$/.test(item.id) || ids.has(item.id)) return { error: `Producto ${n}: identificador inválido o repetido.` };
+    if (!/^[a-z0-9-]{2,30}$/.test(item.id) || ids.has(item.id)) return { error: `${n}: identificador inválido o repetido (minúsculas, números y guiones).` };
     ids.add(item.id);
-    if (item.nombre.length < 2) return { error: `Producto ${n}: falta el nombre.` };
-    if (item.cantidad_base == null || item.precio_base == null) return { error: `Producto ${n}: cantidad o precio base inválidos.` };
-    if (!item.cantidades.length) return { error: `Producto ${n}: indica al menos una cantidad.` };
+    if (item.nombre.length < 2) return { error: `${n}: falta el nombre.` };
+    if (item.cantidad_base == null || item.precio_base == null) return { error: `${n}: cantidad o precio base inválidos.` };
+    if (!item.cantidades.length) return { error: `${n}: indica al menos una cantidad.` };
     c.productos.push(item);
   }
+  if (!c.productos.some((p) => p.visible)) return { error: 'Deja al menos un producto visible.' };
 
-  for (const lista of ['sabores', 'rellenos', 'acabados', 'extras', 'entrega']) {
-    const arr = Array.isArray(v[lista]) ? v[lista] : [];
-    if (arr.length > 30) return { error: `${lista}: máximo 30 opciones.` };
-    c[lista] = [];
+  const opciones = (arr, donde, conColor) => {
+    if (!Array.isArray(arr) || arr.length > 40) return { error: `${donde}: máximo 40 opciones.` };
+    const out = [];
     for (const o of arr) {
-      const item = { nombre: texto(o && o.nombre, 80), precio: entero(o && o.precio, 0, 9999999) };
-      if (item.nombre.length < 2 || item.precio == null) return { error: `${lista}: cada opción necesita nombre y precio válido.` };
-      c[lista].push(item);
+      const item = { nombre: texto(o && o.nombre, 80), descripcion: texto(o && o.descripcion, 140), icono: ICONO(o && o.icono), precio: entero(o && o.precio, 0, 9999999), visible: !(o && o.visible === false) };
+      if (conColor) { item.color = COLOR(o && o.color); item.foto = FOTO_OPC(o && o.foto); }
+      if (item.nombre.length < 2 || item.precio == null) return { error: `${donde}: cada opción necesita nombre y precio válido.` };
+      out.push(item);
     }
-  }
-  if (!c.entrega.length) return { error: 'Agrega al menos una forma de entrega (recojo o delivery).' };
+    return { out };
+  };
 
-  c.franjas = (Array.isArray(v.franjas) ? v.franjas : []).map((x) => texto(x, 5)).filter((x) => /^([01]\d|2[0-3]):[0-5]\d$/.test(x));
-  c.franjas = [...new Set(c.franjas)].sort();
+  if (!Array.isArray(v.grupos) || v.grupos.length > 15) return { error: 'Máximo 15 grupos de opciones.' };
+  c.grupos = [];
+  const gids = new Set();
+  for (const [i, g] of v.grupos.entries()) {
+    const item = {
+      id: texto(g && g.id, 30).toLowerCase(),
+      titulo: texto(g && g.titulo, 60),
+      ayuda: texto(g && g.ayuda, 140),
+      tipo: g && g.tipo === 'varios' ? 'varios' : 'uno',
+      obligatorio: !!(g && g.obligatorio),
+      productos: (Array.isArray(g && g.productos) ? g.productos : []).filter((x) => ids.has(x)),
+      visible: !(g && g.visible === false),
+    };
+    const donde = `Grupo «${item.titulo || i + 1}»`;
+    if (!/^[a-z0-9-]{2,30}$/.test(item.id) || gids.has(item.id)) return { error: `${donde}: identificador inválido o repetido.` };
+    gids.add(item.id);
+    if (item.titulo.length < 2) return { error: `Grupo ${i + 1}: falta el título.` };
+    const r = opciones(g && g.opciones, donde, true);
+    if (r.error) return r;
+    item.opciones = r.out;
+    if (item.obligatorio && item.visible && !item.opciones.some((o) => o.visible)) return { error: `${donde}: es obligatorio pero no tiene opciones visibles.` };
+    c.grupos.push(item);
+  }
+
+  const ent = opciones(v.entrega, 'Entrega', false);
+  if (ent.error) return ent;
+  c.entrega = ent.out;
+  if (!c.entrega.some((o) => o.visible)) return { error: 'Deja visible al menos una forma de entrega (recojo o delivery).' };
+
+  c.franjas = [...new Set((Array.isArray(v.franjas) ? v.franjas : []).map((x) => texto(x, 5)).filter((x) => /^([01]\d|2[0-3]):[0-5]\d$/.test(x)))].sort();
   if (!c.franjas.length) return { error: 'Agrega al menos un horario de entrega (HH:MM).' };
   c.fechas_bloqueadas = [...new Set((Array.isArray(v.fechas_bloqueadas) ? v.fechas_bloqueadas : []).map((x) => texto(x, 10)).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().slice(0, 366);
   return { valor: c };

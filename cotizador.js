@@ -1,134 +1,205 @@
-/* Battcakes — cotizador automático de la página principal.
- * Solo se monta si en /admin está activado (contenido.cotizador.activo). Reemplaza el formulario simple de WhatsApp.
- * El precio lo calcula /api/cotizar con las reglas del panel; aquí solo se arman las opciones y se muestra el resultado.
+/* Battcakes — cotizador automático de la página principal (asistente visual por pasos).
+ * Solo se monta si en /admin está activado (contenido.cotizador.activo) o con ?vista-previa=cotizador (para revisar antes de activarlo).
+ * Reemplaza el formulario simple de WhatsApp. Las opciones, textos y precios salen de las reglas de /admin → Cotizador.
+ * El precio en pantalla lo calcula motor-cotizador.js (el mismo motor del servidor); al enviar, /api/cotizar lo recalcula y guarda el código.
  */
-window.bcCotizador = function (reglas, numeroWa) {
+window.bcCotizador = function (reglasEntrada, numeroWa, vistaPrevia) {
   'use strict';
   var cont = document.getElementById('formulario-pedido');
-  if (!cont || !reglas || !reglas.activo) return;
+  if (!cont || !reglasEntrada || !(reglasEntrada.activo || vistaPrevia)) return;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function dinero(c) { return 'S/ ' + (c / 100).toFixed(2); }
-  function extraPrecio(c) { return c > 0 ? ' (+' + dinero(c) + ')' : ''; }
-  function chips(nombre, lista, multiple) {
-    return '<div class="of-chips" data-grupo="' + nombre + '">' + lista.map(function (o, i) {
-      return '<button type="button" class="of-chip' + (!multiple && i === 0 ? ' active' : '') + '" data-i="' + i + '" aria-pressed="' + (!multiple && i === 0) + '">' + esc(o.nombre) + extraPrecio(o.precio) + '</button>';
-    }).join('') + '</div>';
-  }
-  function paso(n, titulo, html, extra) { return '<div class="of-step"' + (extra || '') + '><div class="of-step-title">' + n + ' · ' + titulo + '</div>' + html + '</div>'; }
+  var FOTO = /^(img\/[a-z0-9-]+\.(webp|png|jpg)|\/api\/foto\/subidas\/[a-z0-9]+\.(webp|png|jpg))$/;
+  var COLOR = /^#[0-9A-Fa-f]{6}$/;
+  var vis = function (o) { return o && o.visible !== false; };
 
-  if (reglas.pausado) {
-    cont.innerHTML = '<div class="of-preview"><div class="of-preview-title">Pedidos en pausa</div><p>Por ahora no estamos tomando pedidos nuevos desde la web. Escríbenos por WhatsApp para consultar disponibilidad.</p></div>' +
-      '<div class="of-send"><a class="btn-wsp" href="https://wa.me/' + numeroWa + '?text=' + encodeURIComponent('Hola Battcakes, quiero consultar disponibilidad') + '" target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a></div>';
-    return;
-  }
+  import('/motor-cotizador.js?v=4').then(function (m) { montar(m, m.normalizar(reglasEntrada)); }).catch(function () {});
 
-  // Fecha mínima según la anticipación (el servidor vuelve a validar con la hora exacta).
-  var horasMin = reglas.anticipacion_horas;
-  function minFecha(h) { var d = new Date(Date.now() + h * 3600 * 1000 - 5 * 3600 * 1000); return d.toISOString().slice(0, 10); }
-
-  cont.innerHTML =
-    paso(1, '¿Qué quieres pedir?', chips('producto', reglas.productos.map(function (p) { return { nombre: p.nombre, precio: 0 }; }), false)) +
-    paso(2, '¿Cuánto?', '<div class="of-row"><div class="order-field"><label for="q-cantidad">Cantidad</label><select id="q-cantidad"></select></div><div class="order-field" id="q-pisos-wrap"><label for="q-pisos">Pisos</label><select id="q-pisos"><option value="1">1 piso</option><option value="2">2 pisos (+' + dinero(reglas.segundo_piso) + ')</option></select></div></div>') +
-    (reglas.sabores.length ? paso(3, 'Sabor', chips('sabor', reglas.sabores, false), ' data-personal') : '') +
-    (reglas.rellenos.length ? paso(3, 'Relleno', chips('relleno', reglas.rellenos, false), ' data-personal') : '') +
-    (reglas.acabados.length ? paso(3, 'Acabado', chips('acabado', reglas.acabados, false), ' data-personal') : '') +
-    (reglas.extras.length ? paso(4, 'Adicionales (opcional)', chips('extras', reglas.extras, true)) : '') +
-    paso(5, 'Entrega', '<div class="of-row"><div class="order-field"><label for="q-entrega">Recojo o delivery</label><select id="q-entrega">' + reglas.entrega.map(function (o, i) { return '<option value="' + i + '">' + esc(o.nombre) + extraPrecio(o.precio) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="order-field"><label for="q-fecha">Fecha (mínimo <span id="q-horas">' + horasMin + '</span> h)</label><input id="q-fecha" type="date"></div>' +
-      '<div class="order-field"><label for="q-franja">Horario</label><select id="q-franja">' + reglas.franjas.map(function (f) { return '<option>' + esc(f) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="order-field"><label for="q-detalles">Tema, colores o nombre (opcional)</label><input id="q-detalles" type="text" maxlength="200"></div></div>') +
-    '<div class="of-preview" aria-live="polite"><div class="of-preview-title">Tu cotización</div><div id="q-resultado"><p>Elige la fecha para ver el precio.</p></div></div>' +
-    '<div class="of-send"><button type="button" class="btn-wsp" id="q-enviar" disabled>Enviar cotización por WhatsApp</button><span class="of-note">' + esc(reglas.nota) + '</span></div>' +
-    '<p class="of-note" style="margin-top:14px">Al cotizar aceptas nuestros <a href="/terminos">Términos y Condiciones</a> y nuestra <a href="/privacidad">Política de Privacidad</a>. La cotización no guarda tus datos personales ni reserva la fecha: el pedido se confirma por WhatsApp con el adelanto.</p>';
-
-  var sel = { producto: 0, sabor: 0, relleno: 0, acabado: 0, extras: [] };
-  var ultima = null, temporizador = null, secuencia = 0;
-  var $ = function (id) { return document.getElementById(id); };
-  function producto() { return reglas.productos[sel.producto]; }
-
-  function actualizarProducto() {
-    var p = producto();
-    $('q-cantidad').innerHTML = p.cantidades.map(function (c) { return '<option value="' + c + '"' + (c === p.cantidad_base ? ' selected' : '') + '>' + c + ' ' + esc(p.unidad) + '</option>'; }).join('');
-    $('q-pisos-wrap').hidden = !p.pisos;
-    if (!p.pisos) $('q-pisos').value = '1';
-    cont.querySelectorAll('[data-personal]').forEach(function (s) { s.hidden = !p.personalizable; });
-    var h = Math.max(horasMin, p.anticipacion_horas || 0);
-    $('q-horas').textContent = h;
-    $('q-fecha').min = minFecha(h);
-  }
-
-  cont.addEventListener('click', function (e) {
-    var b = e.target.closest('.of-chip'); if (!b) return;
-    var g = b.parentNode.getAttribute('data-grupo'), i = Number(b.getAttribute('data-i'));
-    if (g === 'extras') {
-      var k = sel.extras.indexOf(i);
-      if (k >= 0) sel.extras.splice(k, 1); else sel.extras.push(i);
-      b.classList.toggle('active', k < 0); b.setAttribute('aria-pressed', String(k < 0));
-    } else {
-      sel[g] = i;
-      b.parentNode.querySelectorAll('.of-chip').forEach(function (c) { c.classList.toggle('active', c === b); c.setAttribute('aria-pressed', String(c === b)); });
-      if (g === 'producto') actualizarProducto();
+  function montar(motor, reglas) {
+    var aviso = vistaPrevia && !reglas.activo ? '<div class="cz-previa">Vista previa: el cotizador está oculto para los clientes.</div>' : '';
+    if (reglas.pausado) {
+      cont.innerHTML = aviso + '<div class="cz"><div class="cz-cab"><h3>Pedidos en pausa</h3><p>Por ahora no estamos tomando pedidos nuevos desde la web. Escríbenos por WhatsApp para consultar disponibilidad.</p></div>' +
+        '<div class="cz-pie"><span></span><a class="btn-wsp" href="https://wa.me/' + numeroWa + '?text=' + encodeURIComponent('Hola Battcakes, quiero consultar disponibilidad') + '" target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a></div></div>';
+      return;
     }
-    pedirPrecio();
-  });
-  ['q-cantidad', 'q-pisos', 'q-entrega', 'q-fecha', 'q-franja'].forEach(function (id) { $(id).addEventListener('change', pedirPrecio); });
+    var productos = reglas.productos.filter(vis);
+    var entregas = reglas.entrega.map(function (e, i) { return { e: e, i: i }; }).filter(function (x) { return vis(x.e); });
+    var sel = { producto: null, cantidad: null, pisos: 1, opciones: {}, entrega: entregas.length === 1 ? entregas[0].i : null, fecha: '', franja: reglas.franjas.length === 1 ? reglas.franjas[0] : '', detalles: '' };
+    var paso = 0, cotizacion = null, error = '';
 
-  function seleccion(guardar) {
-    return {
-      producto: producto().id, cantidad: Number($('q-cantidad').value), pisos: Number($('q-pisos').value),
-      sabor: sel.sabor, relleno: sel.relleno, acabado: sel.acabado, extras: sel.extras,
-      entrega: Number($('q-entrega').value), fecha: $('q-fecha').value, franja: $('q-franja').value, guardar: !!guardar,
-    };
-  }
-  // Solo se llama al servidor al enviar: él recalcula el precio con las reglas guardadas y registra el código.
-  function llamar(guardar) {
-    return fetch('/api/cotizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(seleccion(guardar)) })
-      .then(function (r) { return r.json(); });
-  }
-  // El precio en pantalla lo calcula el mismo motor que usa el servidor (motor-cotizador.js), sin consultas por cada cambio.
-  var motor = import('/motor-cotizador.js');
-  function pedirPrecio() {
-    clearTimeout(temporizador);
-    ultima = null; $('q-enviar').disabled = true;
-    if (!$('q-fecha').value) { $('q-resultado').innerHTML = '<p>Elige la fecha para ver el precio.</p>'; return; }
-    temporizador = setTimeout(function () {
-      var n = ++secuencia;
-      motor.then(function (m) {
-        if (n !== secuencia) return;
-        var r = m.calcular(reglas, seleccion(false), Date.now());
-        if (r.error) { $('q-resultado').innerHTML = '<p style="color:#B00020">' + esc(r.error) + '</p>'; return; }
-        ultima = r.cotizacion; $('q-enviar').disabled = false; pintar(ultima);
-      }).catch(function () { if (n === secuencia) $('q-resultado').innerHTML = '<p>No pudimos calcular el precio. Escríbenos por WhatsApp.</p>'; });
-    }, 150);
-  }
-  function pintar(c) {
-    $('q-resultado').innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:14px">' + c.lineas.map(function (l) {
-      return '<tr><td style="padding:3px 0">' + esc(l.concepto) + '</td><td style="text-align:right;white-space:nowrap">' + dinero(l.importe) + '</td></tr>';
-    }).join('') + '<tr><td style="padding-top:8px;border-top:1px solid rgba(90,20,108,.2)"><b>Total referencial</b></td><td style="text-align:right;padding-top:8px;border-top:1px solid rgba(90,20,108,.2)"><b>' + dinero(c.total) + '</b></td></tr>' +
-      '<tr><td>Adelanto para confirmar (' + c.adelanto_pct + ' %)</td><td style="text-align:right">' + dinero(c.adelanto) + '</td></tr></table>';
-  }
-  function mensaje(c) {
-    var det = $('q-detalles').value.trim();
-    var f = c.fecha.split('-');
-    return 'Hola Battcakes, quiero confirmar esta cotización' + (c.codigo ? ' (código ' + c.codigo + ')' : '') + ':\n' +
-      c.lineas.map(function (l) { return '• ' + l.concepto + ': ' + dinero(l.importe); }).join('\n') +
-      '\nTotal referencial: ' + dinero(c.total) + ' · Adelanto ' + c.adelanto_pct + ' %: ' + dinero(c.adelanto) +
-      '\nEntrega: ' + f[2] + '/' + f[1] + '/' + f[0] + ' a las ' + c.franja + (det ? '\nDetalles: ' + det : '');
-  }
-  $('q-enviar').addEventListener('click', function () {
-    if (!ultima) return;
-    // Abrir la ventana antes de la llamada evita que el navegador la bloquee como ventana emergente.
-    var w = window.open('', '_blank');
-    llamar(true).then(function (j) {
-      var c = j.ok ? j.cotizacion : ultima;
-      var url = 'https://wa.me/' + numeroWa + '?text=' + encodeURIComponent(mensaje(c));
-      if (w) { w.opener = null; w.location.href = url; } else location.href = url;
-    }).catch(function () {
-      var url = 'https://wa.me/' + numeroWa + '?text=' + encodeURIComponent(mensaje(ultima));
-      if (w) w.location.href = url; else location.href = url;
+    function prod() { return productos.filter(function (p) { return p.id === sel.producto; })[0] || null; }
+    function grupos() { return prod() ? motor.gruposDe(reglas, prod().id) : []; }
+    function pasos() {
+      var l = [{ id: 'producto', titulo: '¿Qué quieres pedir?' }, { id: 'cantidad', titulo: '¿Para cuántos?' }];
+      grupos().forEach(function (g) { l.push({ id: 'g:' + g.id, titulo: g.titulo, grupo: g }); });
+      l.push({ id: 'entrega', titulo: 'Entrega y fecha' }, { id: 'resumen', titulo: 'Tu cotización' });
+      return l;
+    }
+    function hoyLima(horas) { return new Date(Date.now() + horas * 3600 * 1000 - 5 * 3600 * 1000).toISOString().slice(0, 10); }
+    function horasMin() { var p = prod(); return Math.max(reglas.anticipacion_horas, (p && p.anticipacion_horas) || 0); }
+    function precioMin(p) { return motor.precioBase(p, p.cantidades[0]); }
+
+    // Total parcial mientras elige (sin fecha): base + pisos + opciones + entrega.
+    function estimado() {
+      var p = prod(); if (!p || !sel.cantidad) return null;
+      var t = motor.precioBase(p, sel.cantidad) + (sel.pisos === 2 ? p.recargo_2_pisos : 0);
+      grupos().forEach(function (g) { (sel.opciones[g.id] || []).forEach(function (i) { t += g.opciones[i].precio; }); });
+      if (sel.entrega != null) t += reglas.entrega[sel.entrega].precio;
+      return t;
+    }
+    function seleccion(guardar) {
+      return { producto: sel.producto, cantidad: sel.cantidad, pisos: sel.pisos, opciones: sel.opciones, entrega: sel.entrega, fecha: sel.fecha, franja: sel.franja, guardar: !!guardar };
+    }
+    function recalcular() {
+      var r = motor.calcular(reglas, seleccion(false), Date.now());
+      cotizacion = r.cotizacion || null; error = r.error || '';
+    }
+
+    function tarjeta(attrs, activa, media, titulo, sub, precio, multiple) {
+      return '<button type="button" class="cz-card' + (activa ? ' activa' : '') + '" ' + attrs + ' aria-pressed="' + !!activa + '">' +
+        (multiple ? '<span class="cz-check" aria-hidden="true">✓</span>' : '') + media +
+        '<span class="cz-card-t">' + esc(titulo) + '</span>' + (sub ? '<span class="cz-card-s">' + esc(sub) + '</span>' : '') +
+        (precio != null ? '<span class="cz-card-p">' + precio + '</span>' : '') + '</button>';
+    }
+    function media(o, grande) {
+      if (o.foto && FOTO.test(o.foto)) return '<span class="cz-media' + (grande ? ' grande' : '') + '"><img src="' + esc(o.foto) + '" alt="" loading="lazy"></span>';
+      if (o.color && COLOR.test(o.color)) return '<span class="cz-media color" style="background:' + o.color + '">' + esc(o.icono || '') + '</span>';
+      return o.icono ? '<span class="cz-media emoji' + (grande ? ' grande' : '') + '">' + esc(o.icono) + '</span>' : '';
+    }
+    function extra(c) { return c > 0 ? '+ ' + dinero(c) : 'Incluido'; }
+
+    function cuerpo(ps) {
+      var p = prod(), ac = ps[paso];
+      if (ac.id === 'producto') {
+        return '<div class="cz-grid grande">' + productos.map(function (x) {
+          return tarjeta('data-producto="' + esc(x.id) + '"', sel.producto === x.id, media(x, true), x.nombre, x.descripcion, 'Desde ' + dinero(precioMin(x)));
+        }).join('') + '</div>';
+      }
+      if (ac.id === 'cantidad') {
+        var h = '<div class="cz-grid chico">' + p.cantidades.map(function (c) {
+          return tarjeta('data-cantidad="' + c + '"', sel.cantidad === c, '', c + ' ' + p.unidad, '', dinero(motor.precioBase(p, c)));
+        }).join('') + '</div>';
+        if (p.pisos) {
+          var puede = sel.cantidad && sel.cantidad >= p.min_2_pisos;
+          h += '<div class="cz-sub">Pisos</div><div class="cz-grid chico">' +
+            tarjeta('data-pisos="1"', sel.pisos === 1, '<span class="cz-media emoji">🎂</span>', '1 piso', '', 'Incluido') +
+            (puede ? tarjeta('data-pisos="2"', sel.pisos === 2, '<span class="cz-media emoji">🎂🎂</span>', '2 pisos', '', '+ ' + dinero(p.recargo_2_pisos)) :
+              '<p class="cz-ayuda">2 pisos disponible desde ' + p.min_2_pisos + ' ' + esc(p.unidad) + '.</p>') + '</div>';
+        }
+        return h;
+      }
+      if (ac.grupo) {
+        var g = ac.grupo, elegidos = sel.opciones[g.id] || [];
+        return (g.ayuda ? '<p class="cz-ayuda">' + esc(g.ayuda) + '</p>' : g.tipo === 'varios' ? '<p class="cz-ayuda">Puedes elegir varias' + (g.obligatorio ? '' : ' o ninguna') + '.</p>' : '') +
+          '<div class="cz-grid">' + g.opciones.map(function (o, i) {
+            if (!vis(o)) return '';
+            return tarjeta('data-grupo="' + esc(g.id) + '" data-i="' + i + '"', elegidos.indexOf(i) >= 0, media(o), o.nombre, o.descripcion, extra(o.precio), g.tipo === 'varios');
+          }).join('') + '</div>';
+      }
+      if (ac.id === 'entrega') {
+        return (entregas.length > 1 ? '<div class="cz-sub">¿Cómo lo recibes?</div><div class="cz-grid">' + entregas.map(function (x) {
+          return tarjeta('data-entrega="' + x.i + '"', sel.entrega === x.i, media(x.e), x.e.nombre, x.e.descripcion, extra(x.e.precio));
+        }).join('') + '</div>' : '') +
+          '<div class="cz-sub">¿Para cuándo? <small>(mínimo ' + horasMin() + ' h de anticipación)</small></div>' +
+          '<div class="cz-fila"><input type="date" id="cz-fecha" min="' + hoyLima(horasMin()) + '" value="' + esc(sel.fecha) + '" aria-label="Fecha de entrega"></div>' +
+          '<div class="cz-sub">Horario</div><div class="cz-chips">' + reglas.franjas.map(function (f) {
+            return '<button type="button" class="of-chip' + (sel.franja === f ? ' active' : '') + '" data-franja="' + esc(f) + '">' + esc(f) + '</button>';
+          }).join('') + '</div>' +
+          '<div class="cz-sub">Tema, colores o nombre en la torta <small>(opcional)</small></div>' +
+          '<div class="cz-fila"><input type="text" id="cz-detalles" maxlength="200" value="' + esc(sel.detalles) + '" placeholder="Ej.: tema unicornio, colores lila y blanco, «Feliz cumple Sofi»"></div>' +
+          (error && sel.fecha ? '<p class="cz-error">' + esc(error) + '</p>' : '');
+      }
+      // resumen
+      var c = cotizacion;
+      return '<table class="cz-tabla">' + c.lineas.map(function (l) { return '<tr><td>' + esc(l.concepto) + '</td><td>' + dinero(l.importe) + '</td></tr>'; }).join('') +
+        '<tr class="total"><td>Total referencial</td><td>' + dinero(c.total) + '</td></tr>' +
+        '<tr><td>Adelanto para confirmar (' + c.adelanto_pct + ' %)</td><td>' + dinero(c.adelanto) + '</td></tr></table>' +
+        '<p class="cz-ayuda">Entrega: ' + esc(c.fecha.split('-').reverse().join('/')) + ' a las ' + esc(c.franja) + (sel.detalles ? ' · ' + esc(sel.detalles) : '') + '</p>' +
+        '<p class="cz-nota">' + esc(reglas.nota) + '</p>';
+    }
+
+    function puedeSeguir(ps) {
+      var ac = ps[paso];
+      if (ac.id === 'producto') return !!sel.producto;
+      if (ac.id === 'cantidad') return !!sel.cantidad;
+      if (ac.grupo) return !ac.grupo.obligatorio || (sel.opciones[ac.grupo.id] || []).length > 0;
+      if (ac.id === 'entrega') { recalcular(); return !!cotizacion; }
+      return true;
+    }
+
+    function pintar() {
+      var ps = pasos(); if (paso >= ps.length) paso = ps.length - 1;
+      if (ps[paso].id === 'resumen' || ps[paso].id === 'entrega') recalcular();
+      var est = estimado(), ultimo = ps[paso].id === 'resumen';
+      cont.innerHTML = aviso + '<div class="cz">' +
+        '<div class="cz-cab"><h3>' + esc(reglas.titulo) + '</h3>' + (reglas.subtitulo ? '<p>' + esc(reglas.subtitulo) + '</p>' : '') +
+        '<div class="cz-progreso" aria-hidden="true"><span style="width:' + Math.round(((paso + 1) / ps.length) * 100) + '%"></span></div>' +
+        '<div class="cz-paso">Paso ' + (paso + 1) + ' de ' + ps.length + ' · <b>' + esc(ps[paso].titulo) + '</b></div></div>' +
+        '<div class="cz-cuerpo">' + cuerpo(ps) + '</div>' +
+        '<div class="cz-pie"><div class="cz-total">' + (ultimo && cotizacion ? 'Total <b>' + dinero(cotizacion.total) + '</b>' : est != null ? 'Estimado <b>' + dinero(est) + '</b>' : '') + '</div>' +
+        '<div class="cz-botones">' + (paso > 0 ? '<button type="button" class="btn btn-outline" data-nav="-1">Atrás</button>' : '') +
+        (ultimo ? '<button type="button" class="btn-wsp" id="cz-enviar">Enviar por WhatsApp</button>' :
+          '<button type="button" class="btn btn-primary" data-nav="1"' + (puedeSeguir(ps) ? '' : ' disabled') + '>Siguiente</button>') + '</div></div>' +
+        '<p class="cz-legal">Al cotizar aceptas nuestros <a href="/terminos">Términos y Condiciones</a> y nuestra <a href="/privacidad">Política de Privacidad</a>. No guardamos tus datos personales y la cotización no reserva la fecha: el pedido se confirma por WhatsApp con el adelanto.</p></div>';
+    }
+    function refrescarBoton() {
+      var b = cont.querySelector('[data-nav="1"]'); if (b) b.disabled = !puedeSeguir(pasos());
+      var err = cont.querySelector('.cz-error'); if (err) err.remove();
+      if (error && sel.fecha && pasos()[paso].id === 'entrega') { var p = document.createElement('p'); p.className = 'cz-error'; p.textContent = error; cont.querySelector('.cz-cuerpo').appendChild(p); }
+      var t = cont.querySelector('.cz-total'), est = estimado(); if (t && est != null) t.innerHTML = 'Estimado <b>' + dinero(est) + '</b>';
+    }
+
+    cont.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b || !cont.contains(b)) return;
+      var p = prod();
+      if (b.hasAttribute('data-producto')) {
+        var id = b.getAttribute('data-producto');
+        if (id !== sel.producto) { sel.producto = id; sel.cantidad = null; sel.pisos = 1; sel.opciones = {}; var np = prod(); if (np.cantidades.indexOf(np.cantidad_base) >= 0) sel.cantidad = np.cantidad_base; }
+        paso = 1; pintar(); return;
+      }
+      if (b.hasAttribute('data-cantidad')) { sel.cantidad = Number(b.getAttribute('data-cantidad')); if (sel.pisos === 2 && sel.cantidad < p.min_2_pisos) sel.pisos = 1; pintar(); return; }
+      if (b.hasAttribute('data-pisos')) { sel.pisos = Number(b.getAttribute('data-pisos')); pintar(); return; }
+      if (b.hasAttribute('data-grupo')) {
+        var gid = b.getAttribute('data-grupo'), i = Number(b.getAttribute('data-i'));
+        var g = grupos().filter(function (x) { return x.id === gid; })[0], arr = (sel.opciones[gid] || []).slice(), k = arr.indexOf(i);
+        if (g.tipo === 'varios') { if (k >= 0) arr.splice(k, 1); else arr.push(i); } else arr = k >= 0 && !g.obligatorio ? [] : [i];
+        sel.opciones[gid] = arr; pintar(); return;
+      }
+      if (b.hasAttribute('data-entrega')) { sel.entrega = Number(b.getAttribute('data-entrega')); pintar(); return; }
+      if (b.hasAttribute('data-franja')) { sel.franja = b.getAttribute('data-franja'); pintar(); return; }
+      if (b.hasAttribute('data-nav')) {
+        paso = Math.max(0, paso + Number(b.getAttribute('data-nav')));
+        pintar(); cont.scrollIntoView({ behavior: 'smooth', block: 'start' }); return;
+      }
+      if (b.id === 'cz-enviar') enviar();
     });
-  });
+    cont.addEventListener('input', function (e) {
+      if (e.target.id === 'cz-detalles') sel.detalles = e.target.value;
+      if (e.target.id === 'cz-fecha') { sel.fecha = e.target.value; refrescarBoton(); }
+    });
+    cont.addEventListener('change', function (e) { if (e.target.id === 'cz-fecha') { sel.fecha = e.target.value; refrescarBoton(); } });
 
-  actualizarProducto();
+    function mensaje(c) {
+      return 'Hola Battcakes, quiero confirmar esta cotización' + (c.codigo ? ' (código ' + c.codigo + ')' : '') + ':\n' +
+        c.lineas.map(function (l) { return '• ' + l.concepto + ': ' + dinero(l.importe); }).join('\n') +
+        '\nTotal referencial: ' + dinero(c.total) + ' · Adelanto ' + c.adelanto_pct + ' %: ' + dinero(c.adelanto) +
+        '\nEntrega: ' + c.fecha.split('-').reverse().join('/') + ' a las ' + c.franja + (sel.detalles.trim() ? '\nDetalles: ' + sel.detalles.trim() : '');
+    }
+    function enviar() {
+      if (!cotizacion) return;
+      // Abrir la ventana antes de la llamada evita que el navegador la bloquee como ventana emergente.
+      var w = window.open('', '_blank');
+      var abrir = function (c) { var url = 'https://wa.me/' + numeroWa + '?text=' + encodeURIComponent(mensaje(c)); if (w) { w.opener = null; w.location.href = url; } else location.href = url; };
+      fetch('/api/cotizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(seleccion(true)) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { abrir(j.ok ? j.cotizacion : cotizacion); })
+        .catch(function () { abrir(cotizacion); });
+    }
+
+    // En móvil, el botón flotante de WhatsApp sube mientras el cotizador está en pantalla para no tapar «Siguiente».
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { document.body.classList.toggle('cz-visible', es[0].isIntersecting); }).observe(cont);
+    if (productos.length === 1) { sel.producto = productos[0].id; if (productos[0].cantidades.indexOf(productos[0].cantidad_base) >= 0) sel.cantidad = productos[0].cantidad_base; paso = 1; }
+    pintar();
+  }
 };

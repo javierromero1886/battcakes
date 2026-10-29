@@ -7,6 +7,8 @@
  * que es exactamente lo que trae index.html escrito a mano (la página funciona igual sin base de datos).
  */
 
+import { normalizar } from '../../motor-cotizador.js';
+
 export const CONTENIDO_BASE = {
   productos: [
     { nombre: 'Torta de Zanahoria', descripcion: 'Bizcocho de zanahoria con nueces, especias y suave frosting de queso crema.', precio: 40, foto: 'img/torta-de-zanahoria.webp', visible: true },
@@ -34,24 +36,50 @@ export const CONTENIDO_BASE = {
     tiktok: 'https://www.tiktok.com/@battcakes',
     anuncio: '',
   },
-  // Reglas del cotizador automático (motor en cotizar.js). Importes en céntimos. Valores de ejemplo: revisarlos antes de activar.
+  // Reglas del cotizador automático (formato en motor-cotizador.js). Importes en céntimos. Valores de ejemplo: revisarlos antes de activar.
   cotizador: {
+    version: 2,
     activo: false,
     pausado: false,
+    titulo: 'Cotiza tu pedido en línea',
+    subtitulo: 'Elige paso a paso y mira el precio al instante.',
     anticipacion_horas: 72,
     adelanto_pct: 60,
     vigencia_horas: 24,
-    segundo_piso: 4500,
     productos: [
-      { id: 'torta', nombre: 'Torta personalizada', unidad: 'porciones', cantidad_base: 20, precio_base: 12000, cantidades: [10, 15, 20, 30, 40, 60], personalizable: true, pisos: true, min_2_pisos: 30, anticipacion_horas: 72 },
-      { id: 'cupcakes', nombre: 'Cupcakes', unidad: 'unidades', cantidad_base: 12, precio_base: 6000, cantidades: [6, 12, 24, 36, 48], personalizable: false, pisos: false, min_2_pisos: 0, anticipacion_horas: 72 },
-      { id: 'brownies', nombre: 'Brownies', unidad: 'unidades', cantidad_base: 12, precio_base: 4800, cantidades: [6, 12, 24, 36], personalizable: false, pisos: false, min_2_pisos: 0, anticipacion_horas: 72 },
+      { id: 'torta', nombre: 'Torta personalizada', descripcion: 'Para cumpleaños, bautizos y celebraciones.', icono: '🎂', foto: 'img/torta-battcakes.webp', unidad: 'porciones', cantidad_base: 20, precio_base: 12000, cantidades: [10, 15, 20, 30, 40, 60], pisos: true, min_2_pisos: 30, recargo_2_pisos: 4500, anticipacion_horas: 72, visible: true },
+      { id: 'cupcakes', nombre: 'Cupcakes', descripcion: 'Decorados a juego con tu celebración.', icono: '🧁', foto: '', unidad: 'unidades', cantidad_base: 12, precio_base: 6000, cantidades: [6, 12, 24, 36, 48], pisos: false, min_2_pisos: 0, recargo_2_pisos: 0, anticipacion_horas: 72, visible: true },
+      { id: 'brownies', nombre: 'Brownies', descripcion: 'Chocolate intenso, ideales para regalar.', icono: '🍫', foto: '', unidad: 'unidades', cantidad_base: 12, precio_base: 4800, cantidades: [6, 12, 24, 36], pisos: false, min_2_pisos: 0, recargo_2_pisos: 0, anticipacion_horas: 72, visible: true },
     ],
-    sabores: [{ nombre: 'Vainilla', precio: 0 }, { nombre: 'Chocolate', precio: 0 }, { nombre: 'Zanahoria', precio: 1000 }, { nombre: 'Red velvet', precio: 1500 }],
-    rellenos: [{ nombre: 'Manjar blanco', precio: 0 }, { nombre: 'Fudge de chocolate', precio: 0 }, { nombre: 'Frutos rojos', precio: 1500 }],
-    acabados: [{ nombre: 'Buttercream', precio: 0 }, { nombre: 'Ganache de chocolate', precio: 1500 }, { nombre: 'Fondant', precio: 3000 }],
-    extras: [{ nombre: 'Topper personalizado', precio: 1500 }, { nombre: 'Velas de cumpleaños', precio: 800 }, { nombre: 'Flores de azúcar', precio: 2500 }],
-    entrega: [{ nombre: 'Recojo coordinado en Breña', precio: 0 }, { nombre: 'Delivery Breña', precio: 800 }, { nombre: 'Delivery Lima Centro, Jesús María, Pueblo Libre', precio: 1200 }, { nombre: 'Delivery otros distritos (a coordinar)', precio: 2000 }],
+    grupos: [
+      { id: 'sabor', titulo: 'Sabor del bizcocho', ayuda: '', tipo: 'uno', obligatorio: true, productos: ['torta'], visible: true, opciones: [
+        { nombre: 'Vainilla', descripcion: '', icono: '', color: '#F3E3B5', foto: '', precio: 0, visible: true },
+        { nombre: 'Chocolate', descripcion: '', icono: '', color: '#6B3E26', foto: '', precio: 0, visible: true },
+        { nombre: 'Zanahoria', descripcion: 'Con nueces y especias', icono: '', color: '#E59A4B', foto: '', precio: 1000, visible: true },
+        { nombre: 'Red velvet', descripcion: '', icono: '', color: '#A3242F', foto: '', precio: 1500, visible: true },
+      ] },
+      { id: 'relleno', titulo: 'Relleno', ayuda: '', tipo: 'uno', obligatorio: true, productos: ['torta'], visible: true, opciones: [
+        { nombre: 'Manjar blanco', descripcion: '', icono: '', color: '#D9A86C', foto: '', precio: 0, visible: true },
+        { nombre: 'Fudge de chocolate', descripcion: '', icono: '', color: '#4A2A1A', foto: '', precio: 0, visible: true },
+        { nombre: 'Frutos rojos', descripcion: '', icono: '', color: '#C2364B', foto: '', precio: 1500, visible: true },
+      ] },
+      { id: 'acabado', titulo: 'Cobertura', ayuda: '', tipo: 'uno', obligatorio: true, productos: ['torta'], visible: true, opciones: [
+        { nombre: 'Buttercream', descripcion: 'Suave y cremosa', icono: '', color: '#FBF1E3', foto: '', precio: 0, visible: true },
+        { nombre: 'Ganache de chocolate', descripcion: '', icono: '', color: '#3B2116', foto: '', precio: 1500, visible: true },
+        { nombre: 'Fondant', descripcion: 'Acabado liso para diseños', icono: '', color: '#F5ECF8', foto: '', precio: 3000, visible: true },
+      ] },
+      { id: 'extras', titulo: 'Adicionales', ayuda: 'Opcional: elige los que quieras.', tipo: 'varios', obligatorio: false, productos: [], visible: true, opciones: [
+        { nombre: 'Topper personalizado', descripcion: '', icono: '✨', color: '', foto: '', precio: 1500, visible: true },
+        { nombre: 'Velas de cumpleaños', descripcion: '', icono: '🕯️', color: '', foto: '', precio: 800, visible: true },
+        { nombre: 'Flores de azúcar', descripcion: '', icono: '🌸', color: '', foto: '', precio: 2500, visible: true },
+      ] },
+    ],
+    entrega: [
+      { nombre: 'Recojo coordinado', descripcion: 'En Breña, previa coordinación', icono: '🛍️', precio: 0, visible: true },
+      { nombre: 'Delivery Breña', descripcion: '', icono: '🛵', precio: 800, visible: true },
+      { nombre: 'Delivery Lima Centro, Jesús María, Pueblo Libre', descripcion: '', icono: '🛵', precio: 1200, visible: true },
+      { nombre: 'Delivery otros distritos', descripcion: 'Costo a confirmar por WhatsApp', icono: '🚗', precio: 2000, visible: true },
+    ],
     franjas: ['10:00', '12:00', '14:00', '16:00', '18:00'],
     fechas_bloqueadas: [],
     nota: 'Precio referencial con IGV incluido. El diseño y el precio final se confirman por WhatsApp; la cotización no reserva fecha.',
@@ -79,6 +107,8 @@ export async function leerContenido(env) {
   } catch (e) {
     console.log('Contenido: tabla no disponible:', e.message);
   }
+  // Las reglas guardadas con el formato anterior (sabores, rellenos… fijos) se convierten al formato con grupos.
+  contenido.cotizador = normalizar(contenido.cotizador);
   return { contenido, actualizado };
 }
 
