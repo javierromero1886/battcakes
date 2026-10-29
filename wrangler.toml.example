@@ -9,3 +9,8 @@ pages_build_output_dir = "."
 binding = "DB"
 database_name = "battcakes-reclamaciones"
 database_id = "REEMPLAZAR-POR-EL-ID-DE-TU-BASE-D1"
+
+# Opcional: bucket R2 para subir fotos desde el panel /admin (npx wrangler r2 bucket create battcakes-fotos)
+[[r2_buckets]]
+binding = "FOTOS"
+bucket_name = "battcakes-fotos"

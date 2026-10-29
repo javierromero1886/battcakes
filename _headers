@@ -7,6 +7,10 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com https://*.googletagmanager.com https://*.googleadservices.com https://*.doubleclick.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googletagmanager.com https://*.google.com https://*.google.com.pe https://*.doubleclick.net https://*.googleadservices.com; font-src 'self'; connect-src 'self' https://cloudflareinsights.com https://challenges.cloudflare.com https://*.googletagmanager.com https://*.google.com https://*.google.com.pe https://*.doubleclick.net https://*.googleadservices.com https://*.googlesyndication.com; frame-src https://challenges.cloudflare.com https://*.doubleclick.net https://*.googletagmanager.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://wa.me; object-src 'none'; upgrade-insecure-requests
 
+/admin
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
 /admin-reclamaciones
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store

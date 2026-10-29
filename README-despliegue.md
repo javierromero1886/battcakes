@@ -118,3 +118,19 @@ npx wrangler d1 execute battcakes-reclamaciones --local --file=schema.sql
 npx wrangler pages dev . --port 8788
 ```
 Abre http://127.0.0.1:8788/libro-de-reclamaciones. Borra `wrangler.toml` y `.dev.vars` antes de subir al repo (o agrégalos a `.gitignore`).
+
+## 12. Panel de administración del contenido (`/admin`)
+
+En **https://battcakes.com/admin** (misma clave `ADMIN_KEY`) se editan sin tocar código:
+
+- **Productos y precios**: nombre, descripción, precio «Desde S/», foto, orden y visibilidad (precio 0 = «Consultar»).
+- **Galería**: título, foto, orden y visibilidad de cada creación.
+- **Contacto**: número de WhatsApp (todos los botones), correo, zona, horario, enlaces de redes y un anuncio opcional sobre el menú.
+- Enlace al panel del **Libro de Reclamaciones** (`/admin-reclamaciones`). Las hojas de reclamación no se editan ni se borran desde ningún panel.
+
+Cómo funciona: cada sección se guarda como JSON en la tabla `contenido` de D1 y la página principal la lee de `/api/contenido` (caché de 1 minuto). Si la tabla está vacía o la API falla, la web muestra el contenido escrito en `index.html`. «Restaurar original» borra la versión guardada de esa sección. Los datos legales (nombre, RUC, domicilio) siguen fijos en las páginas.
+
+Puesta en marcha (una vez):
+1. En la consola de D1 ejecuta el bloque `CREATE TABLE IF NOT EXISTS contenido …` de `schema.sql` y, si tu base es antigua, `ALTER TABLE reclamaciones ADD COLUMN respuesta_email_enviado INTEGER NOT NULL DEFAULT 0;` (necesaria para el panel de reclamos).
+2. Para **subir fotos nuevas**: crea un bucket R2 `battcakes-fotos` (R2 → Create bucket) y en Pages → Settings → Functions → **R2 bucket bindings** agrega `FOTOS` → `battcakes-fotos`. Vuelve a desplegar. Sin este paso el panel solo deja elegir las fotos que ya están en `img/`. Las fotos subidas se sirven desde `/api/foto/subidas/…` (JPG, PNG o WebP, máx. 5 MB; mejor WebP de ~1200 px).
+3. Recomendado: protege `/admin*` y `/api/admin*` con **Cloudflare Access** (Zero Trust → Access → Applications), para que pida además un código al correo del negocio.

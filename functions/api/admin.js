@@ -17,7 +17,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' },
 });
 
-function autorizado(request, env) {
+export function autorizado(request, env) {
   const key = request.headers.get('x-admin-key') || '';
   const real = env.ADMIN_KEY || '';
   if (!real || key.length !== real.length) return false;

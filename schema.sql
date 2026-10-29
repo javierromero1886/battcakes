@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS reclamaciones (
   estado TEXT NOT NULL DEFAULT 'pendiente',
   respuesta TEXT,
   respondido_en TEXT,
-  email_enviado INTEGER NOT NULL DEFAULT 0
+  email_enviado INTEGER NOT NULL DEFAULT 0,
+  respuesta_email_enviado INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_reclamaciones_numero ON reclamaciones (numero);
 CREATE INDEX IF NOT EXISTS idx_reclamaciones_estado ON reclamaciones (estado);
@@ -41,3 +42,12 @@ END;
 
 -- Si ya habías ejecutado una versión anterior de este archivo, ejecuta además:
 --   ALTER TABLE reclamaciones ADD COLUMN canal_respuesta TEXT NOT NULL DEFAULT 'correo';
+--   ALTER TABLE reclamaciones ADD COLUMN respuesta_email_enviado INTEGER NOT NULL DEFAULT 0;
+-- (si alguna responde "duplicate column name", esa columna ya existía: ignora el aviso)
+
+-- Contenido editable del sitio desde el panel /admin (productos, galería, contacto). Un registro JSON por sección.
+CREATE TABLE IF NOT EXISTS contenido (
+  seccion TEXT PRIMARY KEY,
+  valor TEXT NOT NULL,
+  actualizado_en TEXT NOT NULL
+);

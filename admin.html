@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de administración | Battcakes</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="stylesheet" href="legal.css">
+<style>
+  .panel{max-width:1100px;margin:40px auto 80px;padding:0 20px}
+  .barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+  .barra input,.fila input,.fila textarea,.campo input{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px;border-bottom:1px solid var(--line)}
+  .tab{padding:12px 18px;border:0;border-bottom:3px solid transparent;background:none;color:var(--muted);font:inherit;font-weight:800;cursor:pointer}
+  .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-link{margin-left:auto;align-self:center;font-weight:800}
+  .seccion{margin-top:18px}
+  .ayuda{color:var(--muted);font-size:.92rem;margin:6px 0 14px}
+  .fila{display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+  .fila.oculto{opacity:.55}
+  .fila img{width:110px;height:110px;object-fit:cover;border-radius:12px;background:var(--accent-soft)}
+  .fila .datos{display:grid;gap:8px}
+  .fila .datos .par{display:grid;grid-template-columns:1fr 140px;gap:8px}
+  .fila textarea{min-height:64px;resize:vertical}
+  .fila .acciones{display:flex;flex-direction:column;gap:6px}
+  .mini{padding:7px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:.85rem;cursor:pointer;white-space:nowrap}
+  .mini:hover{border-color:var(--accent)}
+  .mini.peligro{color:#B00020}
+  .foto-opc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem}
+  .foto-opc select{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:.85rem;max-width:100%}
+  .check-inline{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+  .campos{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .campo{display:grid;gap:6px}.campo label{font-weight:700;font-size:.92rem}.campo.ancho{grid-column:1/-1}
+  .pie{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px;position:sticky;bottom:0;background:var(--bg);padding:12px 0;border-top:1px solid var(--line)}
+  @media(max-width:720px){.fila{grid-template-columns:1fr}.fila img{width:100%;height:180px}.fila .acciones{flex-direction:row;flex-wrap:wrap}.campos{grid-template-columns:1fr}.fila .datos .par{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="panel">
+  <div class="eyebrow">Uso interno</div>
+  <h1>Panel de administración</h1>
+  <p style="color:var(--muted)">Edita lo que se muestra en battcakes.com: productos y precios, galería de fotos y datos de contacto. Los cambios aparecen en la web en menos de un minuto después de guardar.</p>
+
+  <div class="barra">
+    <label for="clave">Clave de acceso</label>
+    <input id="clave" type="password" placeholder="ADMIN_KEY" autocomplete="current-password">
+    <button class="btn btn-primary" id="entrar" type="button">Entrar</button>
+    <span id="msg" class="form-status" role="status"></span>
+  </div>
+
+  <div id="app" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="productos" aria-selected="true">Productos y precios</button>
+      <button class="tab" role="tab" data-tab="galeria" aria-selected="false">Galería</button>
+      <button class="tab" role="tab" data-tab="contacto" aria-selected="false">Contacto</button>
+      <a class="tab-link" href="/admin-reclamaciones">Libro de Reclamaciones →</a>
+    </div>
+
+    <section class="seccion" data-panel="productos">
+      <p class="ayuda">Los productos destacados de la página principal. El precio se muestra como «Desde S/ …» (pon 0 para mostrar «Consultar»). Desmarca «Visible» para ocultar uno sin borrarlo.</p>
+      <div id="lista-productos"></div>
+      <button class="mini" type="button" id="add-producto">+ Agregar producto</button>
+    </section>
+
+    <section class="seccion" data-panel="galeria" hidden>
+      <p class="ayuda">Fotos de la sección «Galería de creaciones». Usa las flechas para cambiar el orden. Recuerda difuminar logos de equipos o marcas antes de subir una foto.</p>
+      <div id="lista-galeria"></div>
+      <button class="mini" type="button" id="add-galeria">+ Agregar foto</button>
+    </section>
+
+    <section class="seccion" data-panel="contacto" hidden>
+      <p class="ayuda">Datos que aparecen en los botones de WhatsApp, el pie de página y los íconos de redes. El nombre legal y el RUC no se editan aquí (están en las páginas legales).</p>
+      <div class="campos">
+        <div class="campo"><label for="c-whatsapp">WhatsApp (51 + número)</label><input id="c-whatsapp" inputmode="numeric" maxlength="15"></div>
+        <div class="campo"><label for="c-email">Correo</label><input id="c-email" type="email" maxlength="120"></div>
+        <div class="campo"><label for="c-zona">Zona</label><input id="c-zona" maxlength="120"></div>
+        <div class="campo"><label for="c-horario">Horario</label><input id="c-horario" maxlength="120"></div>
+        <div class="campo"><label for="c-instagram">Instagram</label><input id="c-instagram" type="url" maxlength="200"></div>
+        <div class="campo"><label for="c-facebook">Facebook</label><input id="c-facebook" type="url" maxlength="200"></div>
+        <div class="campo"><label for="c-tiktok">TikTok</label><input id="c-tiktok" type="url" maxlength="200"></div>
+        <div class="campo ancho"><label for="c-anuncio">Anuncio en la parte superior (opcional)</label><input id="c-anuncio" maxlength="200" placeholder="Ej.: Pedidos para Navidad hasta el 20 de diciembre"></div>
+      </div>
+    </section>
+
+    <div class="pie">
+      <button class="btn btn-primary" id="guardar" type="button">Guardar cambios</button>
+      <button class="btn btn-outline" id="restaurar" type="button" title="Vuelve esta sección al contenido original de la web">Restaurar original</button>
+      <span id="gmsg" class="form-status" role="status"></span>
+      <a href="/" target="_blank" rel="noopener" style="margin-left:auto">Ver la web ↗</a>
+    </div>
+  </div>
+</main>
+<script>
+(function(){
+  var API='/api/admin-contenido';
+  var FOTOS_SITIO=['img/torta-de-zanahoria.webp','img/torta-de-chocolate.webp','img/tres-leches.webp','img/cheesecake.webp','img/torta-battcakes.webp','img/torta-tematica-cerveza.webp','img/torta-tematica-futbol.webp','img/torta-baby-shower.webp','img/torta-tematica-estadio.webp','img/torta-chocolate-premium.webp','img/torta-corazon.webp','img/torta-tematica-juez.webp','img/torta-bautizo.webp','img/proceso-de-preparacion-battcakes.webp'];
+  var CAMPOS_CONTACTO=['whatsapp','email','zona','horario','instagram','facebook','tiktok','anuncio'];
+  var clave=document.getElementById('clave'),msg=document.getElementById('msg'),gmsg=document.getElementById('gmsg');
+  var datos=null,fotosHabilitadas=false,tabActual='productos',sinGuardar={};
+  try{clave.value=sessionStorage.getItem('bc-admin-key')||'';}catch(e){}
+  function key(){try{sessionStorage.setItem('bc-admin-key',clave.value);}catch(e){}return clave.value;}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function estado(el,t,cls){el.textContent=t;el.className='form-status'+(cls?' '+cls:'');}
+  function pedir(metodo,cuerpo,extra){
+    var o={method:metodo,headers:{'x-admin-key':key()}};
+    if(extra){o.headers['content-type']=extra.tipo;o.body=extra.datos;}
+    else if(cuerpo){o.headers['content-type']='application/json';o.body=JSON.stringify(cuerpo);}
+    return fetch(API+(extra?'?accion=foto':''),o).then(function(r){return r.json().catch(function(){return{ok:false,error:'Respuesta inválida del servidor ('+r.status+').'};});})
+      .then(function(j){if(!j.ok)throw new Error(j.error||'Error');return j;});
+  }
+
+  function entrar(){
+    estado(msg,'Cargando…');
+    pedir('GET').then(function(j){
+      datos=j.contenido;fotosHabilitadas=j.fotos_habilitadas;sinGuardar={};
+      estado(msg,'Sesión iniciada.','ok');document.getElementById('app').hidden=false;pintar();
+    }).catch(function(e){estado(msg,e.message,'err');});
+  }
+
+  /* ---------- listas (productos y galería) ---------- */
+  function selectorFoto(actual){
+    var opciones=FOTOS_SITIO.slice();if(actual&&opciones.indexOf(actual)<0)opciones.unshift(actual);
+    return '<div class="foto-opc"><select data-k="foto" aria-label="Foto">'+opciones.map(function(f){return '<option value="'+esc(f)+'"'+(f===actual?' selected':'')+'>'+esc(f.replace(/^img\/|^\/api\/foto\/subidas\//,''))+'</option>';}).join('')+'</select>'+
+      (fotosHabilitadas?'<label class="mini">Subir foto…<input type="file" accept="image/jpeg,image/png,image/webp" data-subir hidden></label>':'<small style="color:var(--muted)">(subir fotos: falta configurar R2)</small>')+'</div>';
+  }
+  function filaProducto(p,i,total){
+    return '<div class="fila'+(p.visible?'':' oculto')+'" data-i="'+i+'"><img src="'+esc(p.foto)+'" alt="">'+
+      '<div class="datos"><div class="par"><input data-k="nombre" value="'+esc(p.nombre)+'" maxlength="60" placeholder="Nombre" aria-label="Nombre"><input data-k="precio" type="number" min="0" step="0.5" value="'+esc(p.precio)+'" aria-label="Precio desde (S/)"></div>'+
+      '<textarea data-k="descripcion" maxlength="220" placeholder="Descripción" aria-label="Descripción">'+esc(p.descripcion)+'</textarea>'+selectorFoto(p.foto)+'</div>'+
+      acciones(p,i,total)+'</div>';
+  }
+  function filaGaleria(g,i,total){
+    return '<div class="fila'+(g.visible?'':' oculto')+'" data-i="'+i+'"><img src="'+esc(g.foto)+'" alt="">'+
+      '<div class="datos"><input data-k="titulo" value="'+esc(g.titulo)+'" maxlength="60" placeholder="Título" aria-label="Título">'+selectorFoto(g.foto)+'</div>'+
+      acciones(g,i,total)+'</div>';
+  }
+  function acciones(x,i,total){
+    return '<div class="acciones"><label class="check-inline"><input type="checkbox" data-k="visible"'+(x.visible?' checked':'')+'> Visible</label>'+
+      '<button class="mini" type="button" data-mover="-1"'+(i===0?' disabled':'')+' aria-label="Subir">↑</button>'+
+      '<button class="mini" type="button" data-mover="1"'+(i===total-1?' disabled':'')+' aria-label="Bajar">↓</button>'+
+      '<button class="mini peligro" type="button" data-borrar>Eliminar</button></div>';
+  }
+  function pintarLista(sec){
+    var cont=document.getElementById('lista-'+sec),arr=datos[sec];
+    cont.innerHTML=arr.length?arr.map(function(x,i){return sec==='productos'?filaProducto(x,i,arr.length):filaGaleria(x,i,arr.length);}).join(''):'<p class="ayuda">No hay elementos. La sección no se mostrará en la web.</p>';
+  }
+  function pintarContacto(){CAMPOS_CONTACTO.forEach(function(k){document.getElementById('c-'+k).value=datos.contacto[k]||'';});}
+  function pintar(){pintarLista('productos');pintarLista('galeria');pintarContacto();}
+
+  function enLista(sec){
+    var cont=document.getElementById('lista-'+sec);
+    function fila(e){var f=e.target.closest('.fila');return f?Number(f.getAttribute('data-i')):-1;}
+    cont.addEventListener('input',function(e){var i=fila(e),k=e.target.getAttribute('data-k');if(i<0||!k)return;
+      var it=datos[sec][i];if(k==='visible'){it.visible=e.target.checked;e.target.closest('.fila').classList.toggle('oculto',!it.visible);}
+      else if(k==='precio')it.precio=e.target.value===''?0:Number(e.target.value);
+      else it[k]=e.target.value;
+      if(k==='foto')e.target.closest('.fila').querySelector('img').src=it.foto;
+      sinGuardar[sec]=true;});
+    cont.addEventListener('change',function(e){if(!e.target.hasAttribute('data-subir'))return;var i=fila(e),f=e.target.files[0];if(!f)return;
+      if(f.size>5*1024*1024){alert('La foto pesa más de 5 MB.');return;}
+      estado(gmsg,'Subiendo foto…');
+      pedir('POST',null,{tipo:f.type,datos:f}).then(function(j){datos[sec][i].foto=j.foto;sinGuardar[sec]=true;pintarLista(sec);estado(gmsg,'Foto subida. Recuerda guardar los cambios.','ok');})
+        .catch(function(er){estado(gmsg,er.message,'err');});});
+    cont.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var i=fila(e);if(i<0)return;var arr=datos[sec];
+      if(b.hasAttribute('data-borrar')){if(!confirm('¿Eliminar «'+(arr[i].nombre||arr[i].titulo)+'»?'))return;arr.splice(i,1);}
+      else if(b.hasAttribute('data-mover')){var j=i+Number(b.getAttribute('data-mover'));if(j<0||j>=arr.length)return;var t=arr[i];arr[i]=arr[j];arr[j]=t;}
+      else return;
+      sinGuardar[sec]=true;pintarLista(sec);});
+  }
+  enLista('productos');enLista('galeria');
+  document.getElementById('add-producto').addEventListener('click',function(){datos.productos.push({nombre:'Nuevo producto',descripcion:'',precio:0,foto:FOTOS_SITIO[4],visible:false});sinGuardar.productos=true;pintarLista('productos');});
+  document.getElementById('add-galeria').addEventListener('click',function(){datos.galeria.push({titulo:'Nueva foto',foto:FOTOS_SITIO[4],visible:false});sinGuardar.galeria=true;pintarLista('galeria');});
+  CAMPOS_CONTACTO.forEach(function(k){document.getElementById('c-'+k).addEventListener('input',function(e){datos.contacto[k]=e.target.value;sinGuardar.contacto=true;});});
+
+  /* ---------- pestañas, guardar y restaurar ---------- */
+  document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){
+    tabActual=t.getAttribute('data-tab');estado(gmsg,'');
+    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x===t?'true':'false');});
+    document.querySelectorAll('[data-panel]').forEach(function(p){p.hidden=p.getAttribute('data-panel')!==tabActual;});
+  });});
+  document.getElementById('guardar').addEventListener('click',function(){
+    var sec=tabActual;estado(gmsg,'Guardando…');
+    pedir('PUT',{seccion:sec,valor:datos[sec]}).then(function(j){datos[sec]=j.valor;sinGuardar[sec]=false;pintar();estado(gmsg,'Guardado. La web se actualiza en menos de un minuto.','ok');})
+      .catch(function(e){estado(gmsg,e.message,'err');});
+  });
+  document.getElementById('restaurar').addEventListener('click',function(){
+    if(!confirm('¿Volver esta sección al contenido original? Se perderán los cambios guardados en ella.'))return;
+    var sec=tabActual;
+    pedir('DELETE',{seccion:sec}).then(function(j){datos[sec]=j.valor;sinGuardar[sec]=false;pintar();estado(gmsg,'Sección restaurada.','ok');})
+      .catch(function(e){estado(gmsg,e.message,'err');});
+  });
+  window.addEventListener('beforeunload',function(e){if(Object.keys(sinGuardar).some(function(k){return sinGuardar[k];})){e.preventDefault();e.returnValue='';}});
+  document.getElementById('entrar').addEventListener('click',entrar);
+  clave.addEventListener('keydown',function(e){if(e.key==='Enter')entrar();});
+  if(clave.value)entrar();
+})();
+</script>
+</body>
+</html>
