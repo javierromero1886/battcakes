@@ -52,6 +52,8 @@
   .qopc-cab{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
   .qopc .qcolor{display:flex;gap:4px;align-items:center}.qopc input[type=color]{width:38px;height:34px;padding:2px}
   .qopc .qacc{display:flex;gap:4px}
+  .qmodo{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:end;padding:4px 0 10px 58px;border-bottom:1px dashed var(--line)}.qmodo .qc{min-width:230px}.qmodo .ayuda{margin:0;font-size:.82rem}
+  .qtramos{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.qtramo{display:inline-flex;gap:4px;align-items:center;font-size:.85rem;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 6px}.qtramo input{width:76px!important}
   .qchecks{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.88rem}
   .qmuestra{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);font-size:18px;overflow:hidden;background:var(--card)}
   .qmuestra img{width:100%;height:100%;object-fit:cover}
@@ -242,8 +244,21 @@
           '<span class="qcolor"><input data-p="'+b+'.icono" data-t="txt" data-repintar value="'+esc(o.icono||'')+'" maxlength="8" placeholder="😀" style="width:52px" aria-label="Ícono (emoji)">'+
             (conColor?'<input type="color" data-p="'+b+'.color" data-t="txt" data-repintar value="'+esc(o.color||'#ffffff')+'" aria-label="Color">'+(o.color?'<button class="mini" type="button" data-a="clear" data-p="'+b+'.color" title="Quitar color">⨯</button>':''):'')+'</span>'+
           '<span class="qfoto">'+(conColor?fotoSel(b+'.foto'):'')+'</span>'+
-          '<span class="qacc"><label class="check-inline" title="Visible"><input type="checkbox" data-p="'+b+'.visible" data-t="bool"'+(o.visible!==false?' checked':'')+'>👁</label>'+acc(p,i,arr.length)+'</span></div>';
+          '<span class="qacc"><label class="check-inline" title="Visible"><input type="checkbox" data-p="'+b+'.visible" data-t="bool"'+(o.visible!==false?' checked':'')+'>👁</label>'+acc(p,i,arr.length)+'</span>'+
+          (conColor?modoPrecio(o,b):'')+'</div>';
       }).join('')+'<button class="mini" type="button" data-a="add" data-p="'+p+'">+ Agregar opción</button>';}
+  // Precio de la opción según el tamaño elegido: fijo, proporcional a la cantidad o por tramos («hasta N → S/ X»).
+  function modoPrecio(o,b){var modo=o.modo||'fijo',base=datos.cotizador.productos[0]||{cantidad_base:1,unidad:''};
+    var h='<div class="qmodo"><label class="qc"><span>Precio según tamaño</span><select data-p="'+b+'.modo" data-t="txt">'+
+      [['fijo','Igual para todos los tamaños'],['proporcional','Proporcional al tamaño'],['tramos','Por tramos de tamaño']].map(function(m){return '<option value="'+m[0]+'"'+(m[0]===modo?' selected':'')+'>'+m[1]+'</option>';}).join('')+'</select></label>';
+    if(modo==='fijo')h+='<span class="ayuda">Cobra el precio de arriba en cualquier tamaño.</span>';
+    if(modo==='proporcional')h+='<span class="ayuda">El precio de arriba es para la <b>cantidad base</b> de cada producto y sube o baja con el tamaño (ej.: '+dinero(o.precio)+' por '+esc(base.cantidad_base)+' '+esc(base.unidad)+' → '+dinero(o.precio*2)+' por '+esc(base.cantidad_base*2)+').</span>';
+    if(modo==='tramos'){var tr=o.tramos||[];
+      h+='<div class="qtramos">'+tr.map(function(t,k){var tb=b+'.tramos.'+k;
+        return '<span class="qtramo">Hasta <input data-p="'+tb+'.hasta" data-t="num" type="number" min="1" value="'+esc(t.hasta)+'" aria-label="Hasta cantidad"> → S/ <input data-p="'+tb+'.precio" data-t="soles" type="number" min="0" step="0.5" value="'+esc(soles(t.precio))+'" aria-label="Precio del tramo"><button class="mini peligro" type="button" data-a="del" data-p="'+b+'.tramos" data-i="'+k+'" aria-label="Quitar tramo">✕</button></span>';
+      }).join('')+'<button class="mini" type="button" data-a="add" data-p="'+b+'.tramos">+ Tramo</button></div>'+
+      '<span class="ayuda">Se usa el primer tramo que alcance la cantidad elegida; si la supera, el último. Ej.: hasta 20 → S/ 10, hasta 40 → S/ 18, hasta 60 → S/ 25.</span>';}
+    return h+'</div>';}
   function bloque(id,titulo,cuerpo){return '<details class="qbloque" data-bloque="'+id+'"'+(abiertos[id]?' open':'')+'><summary>'+titulo+'</summary><div class="qcuerpo">'+cuerpo+'</div></details>';}
   function pintarCotizador(){
     var q=datos.cotizador;
@@ -281,7 +296,7 @@
   }
   var NUEVO={productos:function(){return {id:'producto-'+(datos.cotizador.productos.length+1),nombre:'Nuevo producto',descripcion:'',icono:'🍰',foto:'',unidad:'unidades',cantidad_base:12,precio_base:0,cantidades:[12],pisos:false,min_2_pisos:0,recargo_2_pisos:0,anticipacion_horas:0,visible:false};},
     grupos:function(){return {id:'grupo-'+(datos.cotizador.grupos.length+1),titulo:'Nuevo paso',ayuda:'',tipo:'uno',obligatorio:false,productos:[],visible:false,opciones:[]};},
-    opcion:function(){return {nombre:'Nueva opción',descripcion:'',icono:'',color:'',foto:'',precio:0,visible:true};},
+    opcion:function(){return {nombre:'Nueva opción',descripcion:'',icono:'',color:'',foto:'',precio:0,modo:'fijo',tramos:[],visible:true};},
     entrega:function(){return {nombre:'Nueva zona',descripcion:'',icono:'🛵',precio:0,visible:true};}};
   var editor=document.getElementById('q-editor');
   editor.addEventListener('toggle',function(e){var d=e.target.closest&&e.target.closest('[data-bloque]');if(d)abiertos[d.getAttribute('data-bloque')]=d.open;},true);
@@ -303,8 +318,8 @@
     if(a==='fecha-add'){var v=document.getElementById('q-nueva-fecha').value;if(!v)return;if(datos.cotizador.fechas_bloqueadas.indexOf(v)<0){datos.cotizador.fechas_bloqueadas.push(v);datos.cotizador.fechas_bloqueadas.sort();}}
     else if(a==='clear')poner(p,'');
     else{var arr=leer(p);
-      if(a==='add')arr.push((NUEVO[p]||NUEVO.opcion)());
-      else if(a==='del'){if(p!=='fechas_bloqueadas'&&!confirm('¿Eliminar «'+(arr[i].nombre||arr[i].titulo)+'»?'))return;arr.splice(i,1);}
+      if(a==='add')arr.push(/[.]tramos$/.test(p)?{hasta:(arr.length?arr[arr.length-1].hasta*2:20),precio:0}:(NUEVO[p]||NUEVO.opcion)());
+      else if(a==='del'){if(p!=='fechas_bloqueadas'&&!/[.]tramos$/.test(p)&&!confirm('¿Eliminar «'+(arr[i].nombre||arr[i].titulo)+'»?'))return;arr.splice(i,1);}
       else{var j=i+(a==='up'?-1:1);if(j<0||j>=arr.length)return;var t=arr[i];arr[i]=arr[j];arr[j]=t;}}
     sinGuardar.cotizador=true;pintarCotizador();});
   // El interruptor guarda al instante (con confirmación), para no depender de «Guardar cambios».

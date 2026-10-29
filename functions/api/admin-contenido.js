@@ -216,7 +216,21 @@ function validarCotizador(entrada) {
     const out = [];
     for (const o of arr) {
       const item = { nombre: texto(o && o.nombre, 80), descripcion: texto(o && o.descripcion, 140), icono: ICONO(o && o.icono), precio: entero(o && o.precio, 0, 9999999), visible: !(o && o.visible === false) };
-      if (conColor) { item.color = COLOR(o && o.color); item.foto = FOTO_OPC(o && o.foto); }
+      if (conColor) {
+        item.color = COLOR(o && o.color); item.foto = FOTO_OPC(o && o.foto);
+        // Precio según el tamaño: fijo, proporcional a la cantidad o por tramos ({ hasta: cantidad, precio }).
+        item.modo = ['proporcional', 'tramos'].includes(o && o.modo) ? o.modo : 'fijo';
+        item.tramos = [];
+        if (item.modo === 'tramos') {
+          for (const t of Array.isArray(o.tramos) ? o.tramos.slice(0, 20) : []) {
+            const hasta = entero(t && t.hasta, 1, 1000), precio = entero(t && t.precio, 0, 9999999);
+            if (hasta == null || precio == null) return { error: `${donde}, «${item.nombre}»: cada tramo necesita cantidad y precio válidos.` };
+            if (!item.tramos.some((x) => x.hasta === hasta)) item.tramos.push({ hasta, precio });
+          }
+          item.tramos.sort((a, b) => a.hasta - b.hasta);
+          if (!item.tramos.length) return { error: `${donde}, «${item.nombre}»: agrega al menos un tramo de precio por tamaño.` };
+        }
+      }
       if (item.nombre.length < 2 || item.precio == null) return { error: `${donde}: cada opción necesita nombre y precio válido.` };
       out.push(item);
     }

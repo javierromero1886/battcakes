@@ -153,3 +153,11 @@ En `/admin` → Cotizador hay cinco bloques plegables:
 5. **Horarios y fechas**: horarios de entrega y calendario de fechas bloqueadas.
 
 El cliente ve un asistente por pasos con tarjetas (fotos, colores o íconos y el precio de cada opción), barra de progreso y total estimado siempre visible. **Vista previa**: `https://battcakes.com/?vista-previa=cotizador#pedidos` muestra el cotizador con las reglas guardadas aunque esté oculto. Las reglas guardadas con el formato anterior se convierten solas.
+
+### 13.2 Precio de las opciones según el tamaño
+
+Cada opción de un grupo tiene **«Precio según tamaño»**:
+- **Igual para todos los tamaños** (fijo): cobra el precio indicado.
+- **Proporcional al tamaño**: el precio indicado es para la cantidad base del producto y se escala igual que el producto (S/ 15 para 20 porciones → S/ 30 para 40).
+- **Por tramos de tamaño**: tabla «hasta N → S/ X»; se usa el primer tramo que alcance la cantidad elegida (si la supera, el último). Ej.: fondant hasta 20 → S/ 30, hasta 40 → S/ 50, hasta 60 → S/ 70.
+El asistente muestra en cada tarjeta el precio para el tamaño que eligió el cliente.

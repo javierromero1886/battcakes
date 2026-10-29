@@ -14,7 +14,7 @@ window.bcCotizador = function (reglasEntrada, numeroWa, vistaPrevia) {
   var COLOR = /^#[0-9A-Fa-f]{6}$/;
   var vis = function (o) { return o && o.visible !== false; };
 
-  import('/motor-cotizador.js?v=4').then(function (m) { montar(m, m.normalizar(reglasEntrada)); }).catch(function () {});
+  import('/motor-cotizador.js?v=5').then(function (m) { montar(m, m.normalizar(reglasEntrada)); }).catch(function () {});
 
   function montar(motor, reglas) {
     var aviso = vistaPrevia && !reglas.activo ? '<div class="cz-previa">Vista previa: el cotizador está oculto para los clientes.</div>' : '';
@@ -44,7 +44,7 @@ window.bcCotizador = function (reglasEntrada, numeroWa, vistaPrevia) {
     function estimado() {
       var p = prod(); if (!p || !sel.cantidad) return null;
       var t = motor.precioBase(p, sel.cantidad) + (sel.pisos === 2 ? p.recargo_2_pisos : 0);
-      grupos().forEach(function (g) { (sel.opciones[g.id] || []).forEach(function (i) { t += g.opciones[i].precio; }); });
+      grupos().forEach(function (g) { (sel.opciones[g.id] || []).forEach(function (i) { t += motor.precioOpcion(g.opciones[i], p, sel.cantidad); }); });
       if (sel.entrega != null) t += reglas.entrega[sel.entrega].precio;
       return t;
     }
@@ -91,10 +91,12 @@ window.bcCotizador = function (reglasEntrada, numeroWa, vistaPrevia) {
       }
       if (ac.grupo) {
         var g = ac.grupo, elegidos = sel.opciones[g.id] || [];
+        var porTam = g.opciones.some(function (o) { return vis(o) && o.modo && o.modo !== 'fijo'; });
         return (g.ayuda ? '<p class="cz-ayuda">' + esc(g.ayuda) + '</p>' : g.tipo === 'varios' ? '<p class="cz-ayuda">Puedes elegir varias' + (g.obligatorio ? '' : ' o ninguna') + '.</p>' : '') +
+          (porTam ? '<p class="cz-ayuda">Precios para ' + sel.cantidad + ' ' + esc(p.unidad) + '.</p>' : '') +
           '<div class="cz-grid">' + g.opciones.map(function (o, i) {
             if (!vis(o)) return '';
-            return tarjeta('data-grupo="' + esc(g.id) + '" data-i="' + i + '"', elegidos.indexOf(i) >= 0, media(o), o.nombre, o.descripcion, extra(o.precio), g.tipo === 'varios');
+            return tarjeta('data-grupo="' + esc(g.id) + '" data-i="' + i + '"', elegidos.indexOf(i) >= 0, media(o), o.nombre, o.descripcion, extra(motor.precioOpcion(o, p, sel.cantidad)), g.tipo === 'varios');
           }).join('') + '</div>';
       }
       if (ac.id === 'entrega') {

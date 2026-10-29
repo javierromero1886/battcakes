@@ -61,17 +61,17 @@ export const CONTENIDO_BASE = {
       { id: 'relleno', titulo: 'Relleno', ayuda: '', tipo: 'uno', obligatorio: true, productos: ['torta'], visible: true, opciones: [
         { nombre: 'Manjar blanco', descripcion: '', icono: '', color: '#D9A86C', foto: '', precio: 0, visible: true },
         { nombre: 'Fudge de chocolate', descripcion: '', icono: '', color: '#4A2A1A', foto: '', precio: 0, visible: true },
-        { nombre: 'Frutos rojos', descripcion: '', icono: '', color: '#C2364B', foto: '', precio: 1500, visible: true },
+        { nombre: 'Frutos rojos', descripcion: 'Precio según el tamaño', icono: '', color: '#C2364B', foto: '', precio: 1500, modo: 'proporcional', tramos: [], visible: true },
       ] },
       { id: 'acabado', titulo: 'Cobertura', ayuda: '', tipo: 'uno', obligatorio: true, productos: ['torta'], visible: true, opciones: [
         { nombre: 'Buttercream', descripcion: 'Suave y cremosa', icono: '', color: '#FBF1E3', foto: '', precio: 0, visible: true },
         { nombre: 'Ganache de chocolate', descripcion: '', icono: '', color: '#3B2116', foto: '', precio: 1500, visible: true },
-        { nombre: 'Fondant', descripcion: 'Acabado liso para diseños', icono: '', color: '#F5ECF8', foto: '', precio: 3000, visible: true },
+        { nombre: 'Fondant', descripcion: 'Acabado liso para diseños', icono: '', color: '#F5ECF8', foto: '', precio: 3000, modo: 'tramos', tramos: [{ hasta: 20, precio: 3000 }, { hasta: 40, precio: 5000 }, { hasta: 60, precio: 7000 }], visible: true },
       ] },
       { id: 'extras', titulo: 'Adicionales', ayuda: 'Opcional: elige los que quieras.', tipo: 'varios', obligatorio: false, productos: [], visible: true, opciones: [
         { nombre: 'Topper personalizado', descripcion: '', icono: '✨', color: '', foto: '', precio: 1500, visible: true },
         { nombre: 'Velas de cumpleaños', descripcion: '', icono: '🕯️', color: '', foto: '', precio: 800, visible: true },
-        { nombre: 'Flores de azúcar', descripcion: '', icono: '🌸', color: '', foto: '', precio: 2500, visible: true },
+        { nombre: 'Flores de azúcar', descripcion: '', icono: '🌸', color: '', foto: '', precio: 2500, modo: 'tramos', tramos: [{ hasta: 15, precio: 2000 }, { hasta: 30, precio: 3500 }, { hasta: 60, precio: 5000 }], visible: true },
       ] },
     ],
     entrega: [

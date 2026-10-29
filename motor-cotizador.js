@@ -7,7 +7,9 @@
  *   productos[]: { id, nombre, descripcion, icono, foto, unidad, cantidad_base, precio_base, cantidades[], pisos, min_2_pisos,
  *                  recargo_2_pisos, anticipacion_horas, visible }
  *   grupos[]:    { id, titulo, ayuda, tipo: 'uno' | 'varios', obligatorio, productos[] (vacío = todos), visible,
- *                  opciones[]: { nombre, descripcion, icono, color, foto, precio, visible } }
+ *                  opciones[]: { nombre, descripcion, icono, color, foto, precio, modo, tramos[], visible } }
+ *   Precio de una opción según el tamaño (modo): "fijo" = precio; "proporcional" = precio a la cantidad base del producto,
+ *   escalado como el producto; "tramos" = [{ hasta, precio }]: el primer tramo cuyo "hasta" cubre la cantidad (si la supera, el último).
  *   entrega[]:   { nombre, descripcion, icono, precio, visible }
  * Selección: { producto, cantidad, pisos, opciones: { [grupo.id]: [índices] }, entrega, fecha, franja }
  */
@@ -43,6 +45,7 @@ export function normalizar(r) {
   n.productos = (n.productos || []).map((p) => ({
     descripcion: '', icono: '', foto: '', visible: true, recargo_2_pisos: n.segundo_piso || 0, ...p,
   }));
+  n.grupos = n.grupos.map((g) => ({ ...g, opciones: (g.opciones || []).map((o) => ({ modo: 'fijo', ...o, tramos: Array.isArray(o.tramos) ? o.tramos : [] })) }));
   n.entrega = (n.entrega || []).map((e) => ({ descripcion: '', icono: '', visible: true, ...e }));
   delete n.segundo_piso;
   n.titulo = n.titulo || 'Cotiza tu pedido en línea';
@@ -59,6 +62,16 @@ export function gruposDe(reglas, productoId) {
 /** Precio de la parte base (producto × cantidad, proporcional a la cantidad base). */
 export function precioBase(prod, cantidad) {
   return Math.round((prod.precio_base * cantidad) / prod.cantidad_base);
+}
+
+/** Precio de una opción para un producto y cantidad (fijo, proporcional o por tramos de tamaño). */
+export function precioOpcion(o, prod, cantidad) {
+  if (o.modo === 'proporcional') return Math.round((o.precio * cantidad) / prod.cantidad_base);
+  if (o.modo === 'tramos' && Array.isArray(o.tramos) && o.tramos.length) {
+    const t = o.tramos.slice().sort((a, b) => a.hasta - b.hasta);
+    return (t.find((x) => cantidad <= x.hasta) || t[t.length - 1]).precio;
+  }
+  return o.precio;
 }
 
 /** Calcula una cotización. Devuelve { cotizacion } o { error }. Todo en céntimos enteros. */
@@ -87,7 +100,7 @@ export function calcular(reglasEntrada, s, ahora) {
       const o = Number.isInteger(i) ? g.opciones[i] : null;
       if (!vis(o)) return { error: `${g.titulo}: opción no disponible.` };
       nombres.push(o.nombre);
-      lineas.push({ concepto: g.tipo === 'uno' ? `${g.titulo}: ${o.nombre}` : o.nombre, importe: o.precio });
+      lineas.push({ concepto: g.tipo === 'uno' ? `${g.titulo}: ${o.nombre}` : o.nombre, importe: precioOpcion(o, prod, cantidad) });
     }
     if (nombres.length) elegidos[g.titulo] = nombres.join(', ');
   }
