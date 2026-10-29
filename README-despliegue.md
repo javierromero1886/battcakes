@@ -161,3 +161,17 @@ Cada opción de un grupo tiene **«Precio según tamaño»**:
 - **Proporcional al tamaño**: el precio indicado es para la cantidad base del producto y se escala igual que el producto (S/ 15 para 20 porciones → S/ 30 para 40).
 - **Por tramos de tamaño**: tabla «hasta N → S/ X»; se usa el primer tramo que alcance la cantidad elegida (si la supera, el último). Ej.: fondant hasta 20 → S/ 30, hasta 40 → S/ 50, hasta 60 → S/ 70.
 El asistente muestra en cada tarjeta el precio para el tamaño que eligió el cliente.
+
+## 14. Costos e inventario (`/admin` → «Costos e inventario»)
+
+Privado (no se publica en la web). Se guarda en D1 en las tablas `insumos`, `movimientos`, `recetas` y `costos_config`.
+
+1. **Puesta en marcha**: en la consola de D1 ejecuta el bloque «Costos e inventario» de `schema.sql` (cuatro `CREATE TABLE` y un índice).
+2. **Insumos**: «Agregar varios insumos» permite cargar muchos a la vez, agrupados por **tipo** (Harinas, Lácteos, Empaques…). Cada uno se mide en gramos, mililitros o unidades; la compra inicial se puede escribir en kg, L, docenas o cientos.
+3. **Compras y costo promedio**: cada compra suma stock y recalcula el **costo promedio ponderado**: (stock × promedio + costo de la compra) ÷ (stock + cantidad). Ej.: 5 kg a S/ 22.50 y luego 5 kg a S/ 25.00 → S/ 4.75 por kg. Los ajustes (merma, conteo) cambian el stock sin tocar el promedio. Hay aviso de «reponer» bajo el stock mínimo.
+4. **Recetas**: insumos y cantidades para lo que **rinde** (p. ej. 20 porciones), merma opcional y vínculo con un producto u opción del cotizador (o precio de venta manual). Para una torta completa: receta del bizcocho (producto) + recetas de rellenos y coberturas (opciones).
+5. **Costeo**: costo de materiales vs. precio de venta del cotizador, **precio sugerido = costo × 2.5** (factor editable), ganancia, margen y estado («✓ OK» o «Sube S/ …»).
+6. **Simulador del producto final**: arma un pedido (producto, tamaño y opciones) y compara el costo total escalado contra el precio del cotizador.
+7. **Producir**: descuenta del stock los insumos de una receta × las veces que se preparó.
+
+El costo es solo de materiales (insumos y empaques). Mano de obra, gas, luz y delivery deben salir del margen.

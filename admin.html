@@ -82,6 +82,7 @@
       <button class="tab" role="tab" data-tab="galeria" aria-selected="false">Galería</button>
       <button class="tab" role="tab" data-tab="contacto" aria-selected="false">Contacto</button>
       <button class="tab" role="tab" data-tab="cotizador" aria-selected="false">Cotizador</button>
+      <button class="tab" role="tab" data-tab="costos" aria-selected="false">Costos e inventario</button>
       <a class="tab-link" href="/admin-reclamaciones">Libro de Reclamaciones →</a>
     </div>
 
@@ -123,6 +124,11 @@
         <p class="ayuda">El cliente envía el código por WhatsApp; aquí verificas el precio que vio. No se guardan datos personales.</p>
         <div id="q-historial"></div>
       </div></details>
+    </section>
+
+    <section class="seccion" data-panel="costos" hidden>
+      <p class="ayuda">Privado: estos datos no se publican en la web. Registra tus insumos y compras (el sistema calcula el <b>costo promedio</b> de cada uno), arma recetas y compara el costo de materiales con el precio de venta del cotizador. Cada acción se guarda al momento.</p>
+      <div id="costos-app"><p class="ayuda">Cargando…</p></div>
     </section>
 
     <div class="pie">
@@ -336,6 +342,9 @@
     tabActual=t.getAttribute('data-tab');estado(gmsg,'');
     document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x===t?'true':'false');});
     document.querySelectorAll('[data-panel]').forEach(function(p){p.hidden=p.getAttribute('data-panel')!==tabActual;});
+    // «Costos e inventario» guarda cada acción al instante (admin-costos.js); no usa Guardar/Restaurar.
+    document.querySelector('.pie').hidden=tabActual==='costos';
+    if(tabActual==='costos'&&window.bcCostos)window.bcCostos(key());
   });});
   document.getElementById('guardar').addEventListener('click',function(){
     var sec=tabActual;estado(gmsg,'Guardando…');
@@ -354,5 +363,6 @@
   if(clave.value)entrar();
 })();
 </script>
+<script src="admin-costos.js?v=2"></script>
 </body>
 </html>
