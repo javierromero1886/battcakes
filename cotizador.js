@@ -81,23 +81,26 @@ window.bcCotizador = function (reglas, numeroWa) {
       entrega: Number($('q-entrega').value), fecha: $('q-fecha').value, franja: $('q-franja').value, guardar: !!guardar,
     };
   }
+  // Solo se llama al servidor al enviar: él recalcula el precio con las reglas guardadas y registra el código.
   function llamar(guardar) {
     return fetch('/api/cotizar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(seleccion(guardar)) })
       .then(function (r) { return r.json(); });
   }
+  // El precio en pantalla lo calcula el mismo motor que usa el servidor (motor-cotizador.js), sin consultas por cada cambio.
+  var motor = import('/motor-cotizador.js');
   function pedirPrecio() {
     clearTimeout(temporizador);
     ultima = null; $('q-enviar').disabled = true;
     if (!$('q-fecha').value) { $('q-resultado').innerHTML = '<p>Elige la fecha para ver el precio.</p>'; return; }
     temporizador = setTimeout(function () {
       var n = ++secuencia;
-      $('q-resultado').innerHTML = '<p>Calculando…</p>';
-      llamar(false).then(function (j) {
+      motor.then(function (m) {
         if (n !== secuencia) return;
-        if (!j.ok) { $('q-resultado').innerHTML = '<p style="color:#B00020">' + esc(j.error) + '</p>'; return; }
-        ultima = j.cotizacion; $('q-enviar').disabled = false; pintar(ultima);
+        var r = m.calcular(reglas, seleccion(false), Date.now());
+        if (r.error) { $('q-resultado').innerHTML = '<p style="color:#B00020">' + esc(r.error) + '</p>'; return; }
+        ultima = r.cotizacion; $('q-enviar').disabled = false; pintar(ultima);
       }).catch(function () { if (n === secuencia) $('q-resultado').innerHTML = '<p>No pudimos calcular el precio. Escríbenos por WhatsApp.</p>'; });
-    }, 250);
+    }, 150);
   }
   function pintar(c) {
     $('q-resultado').innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:14px">' + c.lineas.map(function (l) {
