@@ -34,6 +34,15 @@
   .campos{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   .campo{display:grid;gap:6px}.campo label{font-weight:700;font-size:.92rem}.campo.ancho{grid-column:1/-1}
   .pie{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px;position:sticky;bottom:0;background:var(--bg);padding:12px 0;border-top:1px solid var(--line)}
+  .interruptor{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:8px}
+  .chip-on{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:#D8F3E3;color:#0B5F32}.chip-off{font-size:.75rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:#EEE;color:#555}
+  .qprod{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end}
+  .qprod .campo input,.qprod .campo select,.qopc input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;width:100%}
+  .qprod .campo label{font-size:.82rem}
+  .q-listas{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:22px}
+  .qopc{display:grid;grid-template-columns:1fr 90px auto;gap:6px;margin-bottom:6px}
+  .qhist{font-size:.9rem;border-bottom:1px solid var(--line);padding:8px 0}
+  @media(max-width:720px){.qprod{grid-template-columns:1fr 1fr}}
   @media(max-width:720px){.fila{grid-template-columns:1fr}.fila img{width:100%;height:180px}.fila .acciones{flex-direction:row;flex-wrap:wrap}.campos{grid-template-columns:1fr}.fila .datos .par{grid-template-columns:1fr}}
 </style>
 </head>
@@ -41,7 +50,7 @@
 <main class="panel">
   <div class="eyebrow">Uso interno</div>
   <h1>Panel de administración</h1>
-  <p style="color:var(--muted)">Edita lo que se muestra en battcakes.com: productos y precios, galería de fotos y datos de contacto. Los cambios aparecen en la web en menos de un minuto después de guardar.</p>
+  <p style="color:var(--muted)">Edita lo que se muestra en battcakes.com: productos y precios, galería de fotos, datos de contacto y las reglas del cotizador automático. Los cambios aparecen en la web en menos de un minuto después de guardar.</p>
 
   <div class="barra">
     <label for="clave">Clave de acceso</label>
@@ -55,6 +64,7 @@
       <button class="tab" role="tab" data-tab="productos" aria-selected="true">Productos y precios</button>
       <button class="tab" role="tab" data-tab="galeria" aria-selected="false">Galería</button>
       <button class="tab" role="tab" data-tab="contacto" aria-selected="false">Contacto</button>
+      <button class="tab" role="tab" data-tab="cotizador" aria-selected="false">Cotizador</button>
       <a class="tab-link" href="/admin-reclamaciones">Libro de Reclamaciones →</a>
     </div>
 
@@ -82,6 +92,32 @@
         <div class="campo"><label for="c-tiktok">TikTok</label><input id="c-tiktok" type="url" maxlength="200"></div>
         <div class="campo ancho"><label for="c-anuncio">Anuncio en la parte superior (opcional)</label><input id="c-anuncio" maxlength="200" placeholder="Ej.: Pedidos para Navidad hasta el 20 de diciembre"></div>
       </div>
+    </section>
+
+    <section class="seccion" data-panel="cotizador" hidden>
+      <div class="interruptor">
+        <label class="check-inline"><input type="checkbox" id="q-activo"> <b>Mostrar el cotizador automático en la web</b></label>
+        <span id="q-estado-web"></span>
+      </div>
+      <p class="ayuda">Apagado, la web muestra el formulario simple de WhatsApp de siempre. Encendido, los clientes eligen producto, tamaño, sabor, adicionales, entrega y fecha, y ven el precio calculado con estas reglas (en el servidor). La cotización no reserva fecha: se confirma por WhatsApp con el adelanto. Precios en soles, con IGV.</p>
+      <div class="campos">
+        <div class="campo"><label class="check-inline"><input type="checkbox" id="q-pausado"> Pausar pedidos nuevos (el cotizador muestra un aviso)</label></div>
+        <div class="campo"><label for="q-anticipacion">Anticipación mínima (horas)</label><input id="q-anticipacion" type="number" min="0" max="720"></div>
+        <div class="campo"><label for="q-adelanto">Adelanto (%)</label><input id="q-adelanto" type="number" min="0" max="100"></div>
+        <div class="campo"><label for="q-vigencia">Vigencia de la cotización (horas)</label><input id="q-vigencia" type="number" min="1" max="720"></div>
+        <div class="campo"><label for="q-piso">Recargo por segundo piso (S/)</label><input id="q-piso" type="number" min="0" step="0.5"></div>
+        <div class="campo"><label for="q-franjas">Horarios de entrega (separados por coma)</label><input id="q-franjas" placeholder="10:00, 12:00, 16:00"></div>
+        <div class="campo ancho"><label for="q-bloqueadas">Fechas sin entregas (AAAA-MM-DD, separadas por coma)</label><input id="q-bloqueadas" placeholder="2026-12-24, 2026-12-25"></div>
+        <div class="campo ancho"><label for="q-nota">Nota bajo el precio</label><input id="q-nota" maxlength="300"></div>
+      </div>
+      <h3 style="margin-top:22px">Productos y precio base</h3>
+      <p class="ayuda">Precio base = precio por la cantidad base; se escala en proporción (ej.: S/ 120 por 20 porciones → 40 porciones = S/ 240). «Personalizable» habilita sabor, relleno y acabado.</p>
+      <div id="q-productos"></div>
+      <button class="mini" type="button" id="q-add-producto">+ Agregar producto</button>
+      <div class="q-listas" id="q-listas"></div>
+      <h3 style="margin-top:22px">Últimas cotizaciones</h3>
+      <p class="ayuda">El cliente envía el código por WhatsApp; aquí verificas el precio que vio. No se guardan datos personales.</p>
+      <div id="q-historial"></div>
     </section>
 
     <div class="pie">
@@ -114,7 +150,7 @@
   function entrar(){
     estado(msg,'Cargando…');
     pedir('GET').then(function(j){
-      datos=j.contenido;fotosHabilitadas=j.fotos_habilitadas;sinGuardar={};
+      datos=j.contenido;cotizaciones=j.cotizaciones||[];fotosHabilitadas=j.fotos_habilitadas;sinGuardar={};
       estado(msg,'Sesión iniciada.','ok');document.getElementById('app').hidden=false;pintar();
     }).catch(function(e){estado(msg,e.message,'err');});
   }
@@ -147,7 +183,7 @@
     cont.innerHTML=arr.length?arr.map(function(x,i){return sec==='productos'?filaProducto(x,i,arr.length):filaGaleria(x,i,arr.length);}).join(''):'<p class="ayuda">No hay elementos. La sección no se mostrará en la web.</p>';
   }
   function pintarContacto(){CAMPOS_CONTACTO.forEach(function(k){document.getElementById('c-'+k).value=datos.contacto[k]||'';});}
-  function pintar(){pintarLista('productos');pintarLista('galeria');pintarContacto();}
+  function pintar(){pintarLista('productos');pintarLista('galeria');pintarContacto();pintarCotizador();}
 
   function enLista(sec){
     var cont=document.getElementById('lista-'+sec);
@@ -173,6 +209,79 @@
   document.getElementById('add-producto').addEventListener('click',function(){datos.productos.push({nombre:'Nuevo producto',descripcion:'',precio:0,foto:FOTOS_SITIO[4],visible:false});sinGuardar.productos=true;pintarLista('productos');});
   document.getElementById('add-galeria').addEventListener('click',function(){datos.galeria.push({titulo:'Nueva foto',foto:FOTOS_SITIO[4],visible:false});sinGuardar.galeria=true;pintarLista('galeria');});
   CAMPOS_CONTACTO.forEach(function(k){document.getElementById('c-'+k).addEventListener('input',function(e){datos.contacto[k]=e.target.value;sinGuardar.contacto=true;});});
+
+  /* ---------- cotizador automático ---------- */
+  var LISTAS_Q=[['sabores','Sabores (recargo)'],['rellenos','Rellenos (recargo)'],['acabados','Acabados (recargo)'],['extras','Adicionales'],['entrega','Entrega y delivery']];
+  var soles=function(c){return (Number(c)||0)/100;},cent=function(s){return Math.round((Number(s)||0)*100);};
+  var dinero=function(c){return 'S/ '+(c/100).toFixed(2);};
+  function pintarCotizador(){
+    var q=datos.cotizador;
+    document.getElementById('q-activo').checked=q.activo;
+    document.getElementById('q-estado-web').innerHTML=q.activo?'<span class="chip-on">Visible en la web</span>':'<span class="chip-off">Oculto en la web</span>';
+    document.getElementById('q-pausado').checked=q.pausado;
+    document.getElementById('q-anticipacion').value=q.anticipacion_horas;
+    document.getElementById('q-adelanto').value=q.adelanto_pct;
+    document.getElementById('q-vigencia').value=q.vigencia_horas;
+    document.getElementById('q-piso').value=soles(q.segundo_piso);
+    document.getElementById('q-franjas').value=q.franjas.join(', ');
+    document.getElementById('q-bloqueadas').value=q.fechas_bloqueadas.join(', ');
+    document.getElementById('q-nota').value=q.nota;
+    document.getElementById('q-productos').innerHTML=q.productos.map(function(p,i){
+      return '<div class="qprod" data-i="'+i+'">'+
+        '<div class="campo"><label>Nombre</label><input data-q="nombre" value="'+esc(p.nombre)+'" maxlength="60"></div>'+
+        '<div class="campo"><label>Identificador</label><input data-q="id" value="'+esc(p.id)+'" maxlength="30"></div>'+
+        '<div class="campo"><label>Se vende por</label><select data-q="unidad"><option value="porciones"'+(p.unidad==='porciones'?' selected':'')+'>porciones</option><option value="unidades"'+(p.unidad!=='porciones'?' selected':'')+'>unidades</option></select></div>'+
+        '<div class="campo"><label>Cantidades (coma)</label><input data-q="cantidades" value="'+esc(p.cantidades.join(', '))+'"></div>'+
+        '<div class="campo"><label>Cantidad base</label><input data-q="cantidad_base" type="number" min="1" value="'+esc(p.cantidad_base)+'"></div>'+
+        '<div class="campo"><label>Precio base (S/)</label><input data-q="precio_base" type="number" min="0" step="0.5" value="'+esc(soles(p.precio_base))+'"></div>'+
+        '<div class="campo"><label>Anticipación propia (h)</label><input data-q="anticipacion_horas" type="number" min="0" value="'+esc(p.anticipacion_horas)+'"></div>'+
+        '<div class="campo"><label>2 pisos desde (cant.)</label><input data-q="min_2_pisos" type="number" min="0" value="'+esc(p.min_2_pisos)+'"></div>'+
+        '<label class="check-inline"><input type="checkbox" data-q="personalizable"'+(p.personalizable?' checked':'')+'> Personalizable</label>'+
+        '<label class="check-inline"><input type="checkbox" data-q="pisos"'+(p.pisos?' checked':'')+'> Permite 2 pisos</label>'+
+        '<span></span><button class="mini peligro" type="button" data-qborrar>Eliminar</button></div>';
+    }).join('');
+    document.getElementById('q-listas').innerHTML=LISTAS_Q.map(function(l){
+      return '<div data-lista="'+l[0]+'"><h3>'+l[1]+'</h3>'+q[l[0]].map(function(o,i){
+        return '<div class="qopc" data-i="'+i+'"><input data-o="nombre" value="'+esc(o.nombre)+'" maxlength="80" aria-label="Nombre"><input data-o="precio" type="number" min="0" step="0.5" value="'+esc(soles(o.precio))+'" aria-label="Precio S/"><button class="mini peligro" type="button" data-oborrar aria-label="Quitar">×</button></div>';
+      }).join('')+'<button class="mini" type="button" data-oadd>+ Opción</button></div>';
+    }).join('');
+    document.getElementById('q-historial').innerHTML=(cotizaciones.length?cotizaciones.map(function(c){var d=c.detalle||{};
+      return '<div class="qhist"><b>'+esc(c.codigo)+'</b> · '+esc(new Date(c.creado_en).toLocaleString('es-PE',{timeZone:'America/Lima'}))+' · '+esc(d.producto)+' '+esc(d.cantidad)+' '+esc(d.unidad)+' · entrega '+esc(d.fecha)+' '+esc(d.franja)+' · <b>'+dinero(c.total)+'</b></div>';
+    }).join(''):'<p class="ayuda">Aún no hay cotizaciones.</p>');
+  }
+  var cotizaciones=[];
+  function leerCampoQ(id,fn){var el=document.getElementById(id);el.addEventListener('input',function(){fn(datos.cotizador,el);sinGuardar.cotizador=true;});}
+  leerCampoQ('q-pausado',function(q,el){q.pausado=el.checked;});
+  leerCampoQ('q-anticipacion',function(q,el){q.anticipacion_horas=Number(el.value);});
+  leerCampoQ('q-adelanto',function(q,el){q.adelanto_pct=Number(el.value);});
+  leerCampoQ('q-vigencia',function(q,el){q.vigencia_horas=Number(el.value);});
+  leerCampoQ('q-piso',function(q,el){q.segundo_piso=cent(el.value);});
+  leerCampoQ('q-franjas',function(q,el){q.franjas=el.value.split(',').map(function(s){return s.trim();}).filter(Boolean);});
+  leerCampoQ('q-bloqueadas',function(q,el){q.fechas_bloqueadas=el.value.split(',').map(function(s){return s.trim();}).filter(Boolean);});
+  leerCampoQ('q-nota',function(q,el){q.nota=el.value;});
+  document.getElementById('q-productos').addEventListener('input',function(e){var f=e.target.closest('.qprod'),k=e.target.getAttribute('data-q');if(!f||!k)return;var p=datos.cotizador.productos[Number(f.getAttribute('data-i'))];
+    if(e.target.type==='checkbox')p[k]=e.target.checked;else if(k==='precio_base')p[k]=cent(e.target.value);
+    else if(k==='cantidades')p[k]=e.target.value.split(',').map(function(s){return Number(s.trim());}).filter(function(n){return n>0;});
+    else if(k==='cantidad_base'||k==='anticipacion_horas'||k==='min_2_pisos')p[k]=Number(e.target.value);else p[k]=e.target.value;
+    sinGuardar.cotizador=true;});
+  document.getElementById('q-productos').addEventListener('click',function(e){if(!e.target.hasAttribute('data-qborrar'))return;var i=Number(e.target.closest('.qprod').getAttribute('data-i'));
+    if(!confirm('¿Quitar este producto del cotizador?'))return;datos.cotizador.productos.splice(i,1);sinGuardar.cotizador=true;pintarCotizador();});
+  document.getElementById('q-add-producto').addEventListener('click',function(){datos.cotizador.productos.push({id:'producto-'+(datos.cotizador.productos.length+1),nombre:'Nuevo producto',unidad:'unidades',cantidad_base:12,precio_base:0,cantidades:[12],personalizable:false,pisos:false,min_2_pisos:0,anticipacion_horas:0});sinGuardar.cotizador=true;pintarCotizador();});
+  var qlistas=document.getElementById('q-listas');
+  qlistas.addEventListener('input',function(e){var l=e.target.closest('[data-lista]'),f=e.target.closest('.qopc'),k=e.target.getAttribute('data-o');if(!l||!f||!k)return;
+    var o=datos.cotizador[l.getAttribute('data-lista')][Number(f.getAttribute('data-i'))];o[k]=k==='precio'?cent(e.target.value):e.target.value;sinGuardar.cotizador=true;});
+  qlistas.addEventListener('click',function(e){var l=e.target.closest('[data-lista]');if(!l)return;var arr=datos.cotizador[l.getAttribute('data-lista')];
+    if(e.target.hasAttribute('data-oadd'))arr.push({nombre:'Nueva opción',precio:0});
+    else if(e.target.hasAttribute('data-oborrar'))arr.splice(Number(e.target.closest('.qopc').getAttribute('data-i')),1);
+    else return;sinGuardar.cotizador=true;pintarCotizador();});
+  // El interruptor guarda al instante (con confirmación), para no depender de «Guardar cambios».
+  document.getElementById('q-activo').addEventListener('change',function(e){
+    var on=e.target.checked;
+    if(!confirm(on?'¿Mostrar el cotizador automático en la web? Revisa antes que los precios sean los correctos.':'¿Ocultar el cotizador automático? La web volverá al formulario simple de WhatsApp.')){e.target.checked=!on;return;}
+    var q=JSON.parse(JSON.stringify(datos.cotizador));q.activo=on;estado(gmsg,'Guardando…');
+    pedir('PUT',{seccion:'cotizador',valor:q}).then(function(j){datos.cotizador=j.valor;sinGuardar.cotizador=false;pintarCotizador();estado(gmsg,on?'Cotizador visible en la web (en menos de un minuto).':'Cotizador oculto.','ok');})
+      .catch(function(er){e.target.checked=!on;estado(gmsg,er.message,'err');});
+  });
 
   /* ---------- pestañas, guardar y restaurar ---------- */
   document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){

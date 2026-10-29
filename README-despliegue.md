@@ -134,3 +134,11 @@ Puesta en marcha (una vez):
 1. En la consola de D1 ejecuta el bloque `CREATE TABLE IF NOT EXISTS contenido …` de `schema.sql` y, si tu base es antigua, `ALTER TABLE reclamaciones ADD COLUMN respuesta_email_enviado INTEGER NOT NULL DEFAULT 0;` (necesaria para el panel de reclamos).
 2. Para **subir fotos nuevas**: crea un bucket R2 `battcakes-fotos` (R2 → Create bucket) y en Pages → Settings → Functions → **R2 bucket bindings** agrega `FOTOS` → `battcakes-fotos`. Vuelve a desplegar. Sin este paso el panel solo deja elegir las fotos que ya están en `img/`. Las fotos subidas se sirven desde `/api/foto/subidas/…` (JPG, PNG o WebP, máx. 5 MB; mejor WebP de ~1200 px).
 3. Recomendado: protege `/admin*` y `/api/admin*` con **Cloudflare Access** (Zero Trust → Access → Applications), para que pida además un código al correo del negocio.
+
+## 13. Cotizador automático (pestaña «Cotizador» de `/admin`)
+
+- **Interruptor «Mostrar el cotizador automático en la web»**: apagado (por defecto) la web usa el formulario simple de WhatsApp; encendido, lo reemplaza por el cotizador con precios. Se guarda al instante.
+- **Reglas**: anticipación mínima (72 h), adelanto (%), vigencia, recargo de segundo piso, horarios, fechas sin entregas, pausa de pedidos, productos (precio base por cantidad base, cantidades permitidas, 2 pisos desde X), sabores, rellenos, acabados, adicionales y delivery por zona. Los valores iniciales son **ejemplos**: revísalos antes de encenderlo.
+- **Cálculo**: lo hace el servidor (`/api/cotizar`) en céntimos: base proporcional + recargos + adicionales + delivery; adelanto redondeado hacia arriba. Valida 72 h en hora de Lima, fechas bloqueadas y reglas de pisos.
+- Al enviar por WhatsApp se guarda la cotización con un código (`C-XXXXXX`, sin datos personales) que se ve en «Últimas cotizaciones». La cotización no reserva fecha ni es un pedido.
+- Puesta en marcha: ejecuta en D1 el bloque `CREATE TABLE IF NOT EXISTS cotizaciones …` de `schema.sql` (y su índice).

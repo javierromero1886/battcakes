@@ -33,7 +33,12 @@ async function guardia(request, env) {
 export async function onRequestGet({ request, env }) {
   const no = await guardia(request, env); if (no) return no;
   const { contenido, actualizado } = await leerContenido(env);
-  return json({ ok: true, contenido, actualizado, fotos_habilitadas: !!env.FOTOS });
+  let cotizaciones = [];
+  try {
+    const res = await env.DB.prepare('SELECT codigo, creado_en, detalle, total FROM cotizaciones ORDER BY id DESC LIMIT 50').all();
+    cotizaciones = (res.results || []).map((c) => { try { return { ...c, detalle: JSON.parse(c.detalle) }; } catch { return c; } });
+  } catch (e) { console.log('Cotizaciones no disponibles:', e.message); }
+  return json({ ok: true, contenido, actualizado, cotizaciones, fotos_habilitadas: !!env.FOTOS });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -127,6 +132,7 @@ function validar(seccion, v) {
     }
     return { valor };
   }
+  if (seccion === 'cotizador') return validarCotizador(v);
   // contacto
   if (!v || typeof v !== 'object') return { error: 'Datos de contacto inválidos.' };
   const c = {
@@ -145,5 +151,68 @@ function validar(seccion, v) {
   if (c.instagram && !URL_RED('instagram\\.com').test(c.instagram)) return { error: 'Instagram: pega el enlace completo (https://www.instagram.com/...).' };
   if (c.facebook && !URL_RED('facebook\\.com').test(c.facebook)) return { error: 'Facebook: pega el enlace completo (https://www.facebook.com/...).' };
   if (c.tiktok && !URL_RED('tiktok\\.com').test(c.tiktok)) return { error: 'TikTok: pega el enlace completo (https://www.tiktok.com/...).' };
+  return { valor: c };
+}
+
+const entero = (v, min, max) => { const n = Number(v); return Number.isInteger(n) && n >= min && n <= max ? n : null; };
+
+// Reglas del cotizador automático. Importes en céntimos enteros (el panel convierte desde soles).
+function validarCotizador(v) {
+  if (!v || typeof v !== 'object') return { error: 'Reglas del cotizador inválidas.' };
+  const c = {
+    activo: !!v.activo,
+    pausado: !!v.pausado,
+    anticipacion_horas: entero(v.anticipacion_horas, 0, 720),
+    adelanto_pct: entero(v.adelanto_pct, 0, 100),
+    vigencia_horas: entero(v.vigencia_horas, 1, 720),
+    segundo_piso: entero(v.segundo_piso, 0, 9999999),
+    nota: texto(v.nota, 300),
+  };
+  if (c.anticipacion_horas == null) return { error: 'Anticipación: entre 0 y 720 horas.' };
+  if (c.adelanto_pct == null) return { error: 'Adelanto: entre 0 y 100 %.' };
+  if (c.vigencia_horas == null) return { error: 'Vigencia: entre 1 y 720 horas.' };
+  if (c.segundo_piso == null) return { error: 'Recargo de segundo piso inválido.' };
+
+  if (!Array.isArray(v.productos) || !v.productos.length || v.productos.length > 20) return { error: 'Agrega entre 1 y 20 productos al cotizador.' };
+  c.productos = [];
+  const ids = new Set();
+  for (const [i, p] of v.productos.entries()) {
+    const n = i + 1;
+    const item = {
+      id: texto(p && p.id, 30).toLowerCase(),
+      nombre: texto(p && p.nombre, 60),
+      unidad: p && p.unidad === 'porciones' ? 'porciones' : 'unidades',
+      cantidad_base: entero(p && p.cantidad_base, 1, 1000),
+      precio_base: entero(p && p.precio_base, 0, 9999999),
+      cantidades: Array.isArray(p && p.cantidades) ? [...new Set(p.cantidades.map(Number))].filter((x) => Number.isInteger(x) && x > 0 && x <= 1000).sort((a, b) => a - b).slice(0, 20) : [],
+      personalizable: !!(p && p.personalizable),
+      pisos: !!(p && p.pisos),
+      min_2_pisos: entero(p && p.min_2_pisos, 0, 1000) || 0,
+      anticipacion_horas: entero(p && p.anticipacion_horas, 0, 720) || 0,
+    };
+    if (!/^[a-z0-9-]{2,30}$/.test(item.id) || ids.has(item.id)) return { error: `Producto ${n}: identificador inválido o repetido.` };
+    ids.add(item.id);
+    if (item.nombre.length < 2) return { error: `Producto ${n}: falta el nombre.` };
+    if (item.cantidad_base == null || item.precio_base == null) return { error: `Producto ${n}: cantidad o precio base inválidos.` };
+    if (!item.cantidades.length) return { error: `Producto ${n}: indica al menos una cantidad.` };
+    c.productos.push(item);
+  }
+
+  for (const lista of ['sabores', 'rellenos', 'acabados', 'extras', 'entrega']) {
+    const arr = Array.isArray(v[lista]) ? v[lista] : [];
+    if (arr.length > 30) return { error: `${lista}: máximo 30 opciones.` };
+    c[lista] = [];
+    for (const o of arr) {
+      const item = { nombre: texto(o && o.nombre, 80), precio: entero(o && o.precio, 0, 9999999) };
+      if (item.nombre.length < 2 || item.precio == null) return { error: `${lista}: cada opción necesita nombre y precio válido.` };
+      c[lista].push(item);
+    }
+  }
+  if (!c.entrega.length) return { error: 'Agrega al menos una forma de entrega (recojo o delivery).' };
+
+  c.franjas = (Array.isArray(v.franjas) ? v.franjas : []).map((x) => texto(x, 5)).filter((x) => /^([01]\d|2[0-3]):[0-5]\d$/.test(x));
+  c.franjas = [...new Set(c.franjas)].sort();
+  if (!c.franjas.length) return { error: 'Agrega al menos un horario de entrega (HH:MM).' };
+  c.fechas_bloqueadas = [...new Set((Array.isArray(v.fechas_bloqueadas) ? v.fechas_bloqueadas : []).map((x) => texto(x, 10)).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().slice(0, 366);
   return { valor: c };
 }

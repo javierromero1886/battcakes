@@ -34,6 +34,28 @@ export const CONTENIDO_BASE = {
     tiktok: 'https://www.tiktok.com/@battcakes',
     anuncio: '',
   },
+  // Reglas del cotizador automático (motor en cotizar.js). Importes en céntimos. Valores de ejemplo: revisarlos antes de activar.
+  cotizador: {
+    activo: false,
+    pausado: false,
+    anticipacion_horas: 72,
+    adelanto_pct: 60,
+    vigencia_horas: 24,
+    segundo_piso: 4500,
+    productos: [
+      { id: 'torta', nombre: 'Torta personalizada', unidad: 'porciones', cantidad_base: 20, precio_base: 12000, cantidades: [10, 15, 20, 30, 40, 60], personalizable: true, pisos: true, min_2_pisos: 30, anticipacion_horas: 72 },
+      { id: 'cupcakes', nombre: 'Cupcakes', unidad: 'unidades', cantidad_base: 12, precio_base: 6000, cantidades: [6, 12, 24, 36, 48], personalizable: false, pisos: false, min_2_pisos: 0, anticipacion_horas: 72 },
+      { id: 'brownies', nombre: 'Brownies', unidad: 'unidades', cantidad_base: 12, precio_base: 4800, cantidades: [6, 12, 24, 36], personalizable: false, pisos: false, min_2_pisos: 0, anticipacion_horas: 72 },
+    ],
+    sabores: [{ nombre: 'Vainilla', precio: 0 }, { nombre: 'Chocolate', precio: 0 }, { nombre: 'Zanahoria', precio: 1000 }, { nombre: 'Red velvet', precio: 1500 }],
+    rellenos: [{ nombre: 'Manjar blanco', precio: 0 }, { nombre: 'Fudge de chocolate', precio: 0 }, { nombre: 'Frutos rojos', precio: 1500 }],
+    acabados: [{ nombre: 'Buttercream', precio: 0 }, { nombre: 'Ganache de chocolate', precio: 1500 }, { nombre: 'Fondant', precio: 3000 }],
+    extras: [{ nombre: 'Topper personalizado', precio: 1500 }, { nombre: 'Velas de cumpleaños', precio: 800 }, { nombre: 'Flores de azúcar', precio: 2500 }],
+    entrega: [{ nombre: 'Recojo coordinado en Breña', precio: 0 }, { nombre: 'Delivery Breña', precio: 800 }, { nombre: 'Delivery Lima Centro, Jesús María, Pueblo Libre', precio: 1200 }, { nombre: 'Delivery otros distritos (a coordinar)', precio: 2000 }],
+    franjas: ['10:00', '12:00', '14:00', '16:00', '18:00'],
+    fechas_bloqueadas: [],
+    nota: 'Precio referencial con IGV incluido. El diseño y el precio final se confirman por WhatsApp; la cotización no reserva fecha.',
+  },
 };
 
 export const SECCIONES = Object.keys(CONTENIDO_BASE);

@@ -51,3 +51,14 @@ CREATE TABLE IF NOT EXISTS contenido (
   valor TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
 );
+
+-- Cotizaciones del cotizador automático (sin datos personales). El código va en el mensaje de WhatsApp.
+CREATE TABLE IF NOT EXISTS cotizaciones (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  codigo TEXT NOT NULL UNIQUE,
+  creado_en TEXT NOT NULL,
+  detalle TEXT NOT NULL,
+  total INTEGER NOT NULL,
+  ip_hash TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_ip ON cotizaciones (ip_hash);

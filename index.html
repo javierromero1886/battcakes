@@ -210,6 +210,7 @@ function ofEnviar(){var f=document.getElementById('of-fecha');if(f.value&&f.min&
 })();
 </script>
 <script src="consent.js" defer></script>
+<script src="cotizador.js"></script>
 <script>
 /* Contenido editable desde /admin: si la API responde, reemplaza productos, galería y contacto. Si falla, queda el HTML de arriba. */
 (function(){
@@ -238,6 +239,7 @@ function ofEnviar(){var f=document.getElementById('of-fecha');if(f.value&&f.min&
     [['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok']].forEach(function(r){
       document.querySelectorAll('a[aria-label="'+r[1]+' de Battcakes"]').forEach(function(a){if(k[r[0]])a.href=k[r[0]];else a.hidden=true;});
     });
+    if(c.cotizador&&c.cotizador.activo&&window.bcCotizador){try{window.bcCotizador(c.cotizador,BC_WA);}catch(er){console.log('Cotizador:',er);}}
     if(k.anuncio){var d=document.createElement('div');d.className='bc-anuncio';d.setAttribute('role','note');d.textContent=k.anuncio;var hd=document.querySelector('.site-header');hd.parentNode.insertBefore(d,hd);}
   }).catch(function(){});
 })();
